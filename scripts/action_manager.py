@@ -36,20 +36,17 @@ class ActionManagerNode:
 
         # Example constant poses (fill these with correct ones for your system)
         # Format: [x, y, z, R, P, Y]
-        self.HOME_POSE = rospy.get_param("~home_pose", [0.4, 0.0, 0.4, 3.14, 0.0, 0.0])
+        self.HOME_POSE = rospy.get_param("~home_pose", [0.5, 0.0, 0.5, 0.707, 0.0, 3.14])
 
         # "Load to bin" pose: constant position with negative x value (as you said)
-        self.LOAD_BIN_POSE = rospy.get_param("~load_bin_pose", [-0.3, 0.2, 0.35, 3.14, 0.0, 1.57])
-
-        # "Unload" pose (can be the same as load bin pose or separate)
-        self.UNLOAD_POSE = rospy.get_param("~unload_pose", [-0.3, -0.2, 0.35, 3.14, 0.0, -1.57])
+        self.LOAD_BIN_POSE = rospy.get_param("~load_bin_pose", [-0.3, 0.2, 0.35, -0.707, 0.0, 3.14])
 
         # ---------- Clients ----------
-        rospy.wait_for_service("/move_base")
-        rospy.wait_for_service("/move_arm")
-
-        self.move_base_srv = rospy.ServiceProxy("/move_base", MoveBase)
-        self.move_arm_srv  = rospy.ServiceProxy("/move_arm", MoveArm)
+        rospy.wait_for_service("/robot/move_base")
+        rospy.wait_for_service("robot/move_arm")
+        
+        self.move_base_srv = rospy.ServiceProxy("/robot/move_base", MoveBase)
+        self.move_arm_srv  = rospy.ServiceProxy("/robot/move_arm", MoveArm)
 
         self.gripper_client = actionlib.SimpleActionClient(
             self.gripper_action_name,
@@ -213,37 +210,12 @@ class ActionManagerNode:
 
         return True, f"{action_id}: success."
 
-    def action_unload(self, action_id, timeout):
-        """
-        Similar to load-to-bin but potentially different pose.
-        """
-        start = time.time()
-
-        def remaining():
-            return max(0.0, timeout - (time.time() - start))
-
-        ok, msg = self.call_move_arm_single(self.pose_stamped_from_array(self.UNLOAD_POSE),
-                                            timeout=min(self.arm_step_timeout, remaining()))
-        if not ok:
-            return False, f"{action_id}: failed to reach unload pose: {msg}"
-
-        ok, msg = self.move_gripper(self.open_width, timeout=min(self.gripper_timeout, remaining()))
-        if not ok:
-            return False, f"{action_id}: failed to open gripper: {msg}"
-
-        ok, msg = self.call_move_arm_single(self.pose_stamped_from_array(self.HOME_POSE),
-                                            timeout=min(self.arm_step_timeout, remaining()))
-        if not ok:
-            return False, f"{action_id}: opened but failed returning HOME: {msg}"
-
-        return True, f"{action_id}: success."
-
     # -------------------------------------------------------------------------
     # Service handler
     # -------------------------------------------------------------------------
 
     def handle_action(self, req):
-        action_id = req.action_id.strip().upper()
+        action_id = req.action_id.strip()
         arr = list(req.input)
 
         if len(arr) != 6:
@@ -267,19 +239,16 @@ class ActionManagerNode:
         elif action_id == "load_to_bin":
             ok, msg = self.action_load_to_bin(action_id, timeout=timeout_s)
 
-        elif action_id == "navigate_to_unloading_station":
+        elif action_id == "unload":
             # exactly like NAVIGATE, but you can keep it separate if you want different logging/logic
             ok, msg = self.action_navigate(arr, timeout=min(self.base_step_timeout, timeout_s))
-
-        elif action_id == "unload":
-            ok, msg = self.action_unload(action_id, timeout=timeout_s)
 
         elif action_id == "NOOP":
             ok, msg = True, "NOOP: success."
 
         else:
             ok = False
-            msg = f"Unknown action_id '{action_id}'. Supported: navigate, grasp_fruit, load_to_bin, navigate_to_unloading_station, unload"
+            msg = f"Unknown action_id '{action_id}'. Supported: navigate, grasp_fruit, load_to_bin, unload"
 
             # Checks if the service performed the action in the software, 
             # and also if the current action was perfomed by the robot in the real world
