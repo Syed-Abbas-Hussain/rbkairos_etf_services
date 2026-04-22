@@ -54,6 +54,7 @@ class ServiceCaller:
 
         rospy.loginfo("Sending the Planning request")
         self.resp = self.start_planning(self.domain, self.instance, 60)
+        print(self.resp)
         if not self.resp.success:
             rospy.logerr("PROST server failed")
 
@@ -93,8 +94,10 @@ class ServiceCaller:
         
         self.idle_count = 0
 
-    def get_indices(out):
+    def get_indices(self, out):
         # out can be ['l2'] or 'l2'
+        print(out)
+        
         s = out[0] if isinstance(out, list) else out
 
         aisle_index = -1
@@ -151,8 +154,13 @@ class ServiceCaller:
             action_name = action_to_take.action_name # String, in the same format in the action manager so "navigate, grasp_fruit"
             action_data = action_to_take.action_params
 
+            if action_name == "FAILED":
+                print("WARNING:  PLANNING FAILED")
+                break
+
             # Action index is equal to either the aisle or the location index. It notifies which of the OPTIMIZATION variables should
             # be modified.
+            print(action_name)
             if action_name == "NOOP":
                 action_index = -1
                 location_index = -1

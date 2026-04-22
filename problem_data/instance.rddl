@@ -258,7 +258,7 @@ instance fruit_inst {
     init-state {
         // robot initial state
         robot_at(a1);
-
+        
         // fruits initially present
         fruit_at(l1);
         fruit_at(l2);
