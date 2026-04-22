@@ -42,11 +42,14 @@ class ActionManagerNode:
         self.LOAD_BIN_POSE = rospy.get_param("~load_bin_pose", [-0.3, 0.2, 0.35, -0.707, 0.0, 3.14])
 
         # ---------- Clients ----------
-        rospy.wait_for_service("/robot/move_base")
-        rospy.wait_for_service("robot/move_arm")
-        
-        self.move_base_srv = rospy.ServiceProxy("/robot/move_base", MoveBase)
-        self.move_arm_srv  = rospy.ServiceProxy("/robot/move_arm", MoveArm)
+        move_base_service = rospy.get_param("~move_base_service", "/robot/move_base")
+        move_arm_service  = rospy.get_param("~move_arm_service",  "/robot/move_arm")
+
+        rospy.wait_for_service(move_base_service)
+        rospy.wait_for_service(move_arm_service)
+
+        self.move_base_srv = rospy.ServiceProxy(move_base_service, MoveBase)
+        self.move_arm_srv  = rospy.ServiceProxy(move_arm_service,  MoveArm)
 
         self.gripper_client = actionlib.SimpleActionClient(
             self.gripper_action_name,
@@ -57,12 +60,14 @@ class ActionManagerNode:
         #rospy.loginfo("Gripper action server connected.")
 
         # ---------- Feedback Subscriber ----------
-        self.feedback_sub = rospy.Subscriber("/action_feedback", Bool, self.feedback_callback)
+        action_feedback_topic  = rospy.get_param("~action_feedback_topic", "/action_feedback")
+        self.feedback_sub = rospy.Subscriber(action_feedback_topic, Bool, self.feedback_callback)
         self.feedback = False
 
         # ---------- Service ----------
-        self.srv = rospy.Service("action_server", ActionServer, self.handle_action)
-        rospy.loginfo("ActionOrchestrator service ready on /action_server")
+        action_server_name = rospy.get_param("~action_server_name", "action_server")
+        self.srv = rospy.Service(action_server_name, ActionServer, self.handle_action)
+        rospy.loginfo(f"ActionOrchestrator service ready on /{action_server_name}")
 
     def feedback_callback(self, msg):
         self.feedback = msg.data

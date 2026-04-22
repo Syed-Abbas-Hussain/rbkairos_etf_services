@@ -35,18 +35,46 @@ def get_problem_data_paths(
 class ServiceCaller:
     TERMINAL_PLANNER_ACTIONS = {"FAILED", "ROUND_END", "ERROR"}
 
+    MODE_REAL = "real"
+    MODE_SIMULATION = "simulation"
+    MODE_GAZEBO = "gazebo"
+
     def __init__(self, robot_id, domain_file, instance_file, actions_file):
         rospy.init_node("prost_service_caller")
+
+        self.mode = rospy.get_param("~mode", self.MODE_REAL)
+        robot_namespaces_param = rospy.get_param("~robot_namespaces", "")
+        self.robot_namespaces = [ns.strip() for ns in robot_namespaces_param.split(",") if ns.strip()]
 
         rospy.wait_for_service('/prost_bridge/start_planning')
         rospy.wait_for_service('/prost_bridge/submit_observation')
 
-        rospy.wait_for_service('/action_server') # TODO: Uncomment this when the action server is ready
-
         self.start_planning = rospy.ServiceProxy('/prost_bridge/start_planning', StartPlanning)
         self.submit_obs = rospy.ServiceProxy('/prost_bridge/submit_observation', SubmitObservation)
 
-        self.perform_action = rospy.ServiceProxy('/action_server', ActionServer)
+        if self.mode == self.MODE_REAL:
+            rospy.wait_for_service('/action_server')
+            self.perform_action = rospy.ServiceProxy('/action_server', ActionServer)
+            self.robot_action_servers = []
+            rospy.loginfo("Running in REAL mode — single robot hardware control.")
+        elif self.mode == self.MODE_SIMULATION:
+            self.perform_action = None
+            self.robot_action_servers = []
+            rospy.loginfo("Running in SIMULATION mode — hardware calls skipped, evaluator drives state.")
+        elif self.mode == self.MODE_GAZEBO:
+            self.perform_action = None
+            self.robot_action_servers = []
+            for ns in self.robot_namespaces:
+                srv_name = f"/{ns}/action_server"
+                rospy.wait_for_service(srv_name)
+                self.robot_action_servers.append(rospy.ServiceProxy(srv_name, ActionServer))
+            rospy.loginfo(f"Running in GAZEBO mode — {len(self.robot_action_servers)} robot(s) connected.")
+        else:
+            rospy.logwarn(f"Unknown mode '{self.mode}', falling back to 'real'.")
+            self.mode = self.MODE_REAL
+            rospy.wait_for_service('/action_server')
+            self.perform_action = rospy.ServiceProxy('/action_server', ActionServer)
+            self.robot_action_servers = []
 
         with open(domain_file, 'r') as f:
             self.domain = f.read()
@@ -79,6 +107,20 @@ class ServiceCaller:
         self.pos_to_idx = {name: i for i, name in enumerate(self.positions)}
         self.loc_to_idx = {name: i for i, name in enumerate(self.locations)}
         self.default_robot_idx = self.robot_to_idx.get(robot_id, 0)
+
+    def _execute_hardware_action(self, robot_idx, action_name, real_action):
+        if self.mode == self.MODE_SIMULATION:
+            return True
+        elif self.mode == self.MODE_REAL:
+            response = self.perform_action(action_name, real_action, 50.0)
+            return response.success
+        elif self.mode == self.MODE_GAZEBO:
+            if 0 <= robot_idx < len(self.robot_action_servers):
+                response = self.robot_action_servers[robot_idx](action_name, real_action, 50.0)
+                return response.success
+            rospy.logwarn(f"No action server for robot_idx={robot_idx} (have {len(self.robot_action_servers)}).")
+            return False
+        return False
 
     def parse_action(self, action_name, action_params):
         robot_idx = self.default_robot_idx
@@ -243,9 +285,7 @@ class ServiceCaller:
             else:
                 rospy.logwarn(f"Unknown planner action '{action_name}'.")
 
-            response = self.perform_action(action_name, real_action, 50.0) #TODO: Uncomment this
-            success = response.success
-            #success = True
+            success = self._execute_hardware_action(robot_idx, action_name, real_action)
             # rospy.loginfo(f"Action finished with success: {success} | {response.message}")
 
             observed_action = self.evaluator.create_action_template()
