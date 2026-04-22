@@ -25,7 +25,7 @@ class ActionManagerNode:
         self.gripper_speed = float(rospy.get_param("~gripper_speed", 0.1))
 
         # Gripper widths (meters)
-        self.grasp_width = float(rospy.get_param("~grasp_width", 0.0))       # closed
+        self.grasp_width = float(rospy.get_param("~grasp_width", 0.04))       # closed
         self.open_width  = float(rospy.get_param("~open_width", 0.08))       # open
 
         # Default timeouts
@@ -36,7 +36,7 @@ class ActionManagerNode:
 
         # Example constant poses (fill these with correct ones for your system)
         # Format: [x, y, z, R, P, Y]
-        self.HOME_POSE = rospy.get_param("~home_pose", [0.5, 0.0, 0.5, 0.707, 0.0, 3.14])
+        self.HOME_POSE = rospy.get_param("~home_pose", [0.3, 0.0, 0.5, 0.707, 0.0, 3.14])
 
         # "Load to bin" pose: constant position with negative x value (as you said)
         self.LOAD_BIN_POSE = rospy.get_param("~load_bin_pose", [-0.3, 0.2, 0.35, -0.707, 0.0, 3.14])
@@ -52,9 +52,9 @@ class ActionManagerNode:
             self.gripper_action_name,
             franka_gripper.msg.MoveAction
         )
-        rospy.loginfo(f"Waiting for gripper action server: {self.gripper_action_name}")
-        self.gripper_client.wait_for_server()
-        rospy.loginfo("Gripper action server connected.")
+        #rospy.loginfo(f"Waiting for gripper action server: {self.gripper_action_name}")
+        #self.gripper_client.wait_for_server()
+        #rospy.loginfo("Gripper action server connected.")
 
         # ---------- Feedback Subscriber ----------
         self.feedback_sub = rospy.Subscriber("/action_feedback", Bool, self.feedback_callback)
@@ -169,16 +169,16 @@ class ActionManagerNode:
             return False, f"GRASP: failed to reach target: {msg}"
 
         # 3) Close gripper
-        ok, msg = self.move_gripper(self.grasp_width, timeout=min(self.gripper_timeout, remaining()))
-        if not ok:
-            return False, f"GRASP: failed to close gripper: {msg}"
+        #ok, msg = self.move_gripper(self.grasp_width, timeout=min(self.gripper_timeout, remaining()))
+        #if not ok:
+        #    return False, f"GRASP: failed to close gripper: {msg}"
 
         # 4) Back home
         ok, msg = self.call_move_arm_single(self.pose_stamped_from_array(self.HOME_POSE),
                                             timeout=min(self.arm_step_timeout, remaining()))
         if not ok:
             return False, f"GRASP: failed to return HOME: {msg}"
-
+        rospy.loginfo("GRASP Success")
         return True, "GRASP: success."
 
     def action_load_to_bin(self, action_id, timeout):
@@ -198,9 +198,9 @@ class ActionManagerNode:
         if not ok:
             return False, f"{action_id}: failed to reach load bin pose: {msg}"
 
-        ok, msg = self.move_gripper(self.open_width, timeout=min(self.gripper_timeout, remaining()))
-        if not ok:
-            return False, f"{action_id}: failed to open gripper: {msg}"
+        #ok, msg = self.move_gripper(self.open_width, timeout=min(self.gripper_timeout, remaining()))
+        #if not ok:
+        #    return False, f"{action_id}: failed to open gripper: {msg}"
 
         # Optional: go home
         ok, msg = self.call_move_arm_single(self.pose_stamped_from_array(self.HOME_POSE),
@@ -259,7 +259,8 @@ class ActionManagerNode:
             # If the feedback is not received in 1 second, the action is considered as failed
             real_ok = ok and self.feedback
         
-            return ActionServerResponse(real_ok, msg)
+        return ActionServerResponse(ok, msg)
+        
 
 if __name__ == "__main__":
     ActionManagerNode()
