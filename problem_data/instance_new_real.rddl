@@ -1,0 +1,138 @@
+///////////////////////////////////////////////////////////////////////
+// Instance for real-robot experiment
+//////////////////////////////////////////////////////////////////////
+
+non-fluents fruit_multi_robot_aisle_nf_2 {
+    domain = fruit_collection_multi_aisle;
+
+    objects {
+        location : {l1, l2, l3, l4, l5, l6, l7, l8};
+        aisle_position : {a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, unload};
+        robot : {robot1};
+    };
+
+    non-fluents {
+
+        // === UNLOAD STATIONS ===
+        unload_station(unload);
+  
+
+        // === ADJACENCY ===
+        // Aisle 1 (FORWARD)
+        adjacent(a1, a2);
+        adjacent(a2, a1);
+        adjacent(a2, a3);
+        adjacent(a3, a2);
+        adjacent(a3, a4);
+        adjacent(a4, a3);
+        adjacent(a4, a5);
+        adjacent(a5, a4);
+        adjacent(a5, a6);
+        adjacent(a6, a5);
+        
+        adjacent(a1,a7);
+        adjacent(a7,a1);
+        adjacent(a7, a8);
+        adjacent(a8, a7);
+        adjacent(a8,a9);
+        adjacent(a9,a8);
+        adjacent(a9,a10);
+        adjacent(a10,a9);
+        adjacent(a10,a11);
+        adjacent(a11,a10);
+
+        // Connections to unload stations
+        adjacent(a1, unload);
+        adjacent(unload, a1);
+
+       //reachability
+        reachable_from(l1, a3);  
+        
+        reachable_from(l2, a4);  
+        
+        reachable_from(l3, a5);  
+       
+        reachable_from(l4, a6);  
+        
+        reachable_from(l5, a8);  
+        
+        reachable_from(l6, a9);  
+       
+        reachable_from(l7, a10);  
+       
+        reachable_from(l8, a11);  
+
+        // === DISTANCES ===
+        distance(a1, a2) = 3.000;
+        distance(a2, a1) = 3.000;
+        distance(a2, a3) = 1.000;
+        distance(a3, a2) = 1.000;
+        distance(a3, a4) = 1.000;
+        distance(a4, a3) = 1.000;
+        distance(a4, a5) = 1.000;
+        distance(a5, a4) = 1.000;
+        distance(a5, a6) = 1.000;
+        distance(a6, a5) = 1.000;
+        distance(a1, a7) = 3.000;
+        distance(a7, a1) = 3.000;
+        distance(a7, a8) = 1.000;
+        distance(a8, a7) = 1.000;
+        distance(a8, a9) = 1.000;
+        distance(a9, a8) = 1.000;
+        distance(a9, a10) = 1.000;
+        distance(a10, a9) = 1.000;
+        distance(a10, a11) = 1.000;
+        distance(a11, a10) = 1.000;
+        distance(a1, unload) = 3.0;
+        distance(unload, a1) = 3.0;
+        
+        // === ROBOT PARAMETERS ===
+        GRASP_SUCCESS_PROB = 0.65;
+        MAX_CAPACITY = 120.0;
+        CAPACITY_THRESHOLD = 117.0;
+
+        // fruit weight
+        fruit_weight(l1) = 1.6;
+        fruit_weight(l2) = 1.7;
+        fruit_weight(l3) = 1.7;
+        fruit_weight(l4) = 0.8;
+        fruit_weight(l5) = 1.3;
+        fruit_weight(l6) = 0.9;
+        fruit_weight(l7) = 0.8;
+        fruit_weight(l8) = 0.9;
+        
+        //fruit status
+        fruit_ripe(l1) = true;
+        fruit_ripe(l2) = true;
+        fruit_ripe(l3) = true;
+        fruit_ripe(l4) = true;
+        fruit_ripe(l5) = true;
+        fruit_ripe(l6) = true;  
+        fruit_ripe(l7) = true;
+        fruit_ripe(l8) = true;  
+    };
+}
+
+instance fruit_collection_inst_2 {
+    domain = fruit_collection_multi_aisle;
+    non-fluents = fruit_multi_robot_aisle_nf_2;
+
+    init-state {
+        // robot at a1
+        robot_at(robot1, a1);
+        
+        // All fruits initially present
+        //fruit_at(l1);
+        fruit_at(l2);
+        fruit_at(l3);
+        fruit_at(l4);
+        fruit_at(l5);
+        fruit_at(l6);
+        fruit_at(l7);
+        fruit_at(l8);
+    };
+
+    max-nondef-actions = 1;  
+    horizon = 50;
+    discount = 1.0;
+}
