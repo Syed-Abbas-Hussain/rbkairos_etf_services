@@ -1,0 +1,39 @@
+<launch>
+  <arg name="model_path" default="$(env HOME)/models/yolov5n_fruit.onnx" />
+  <arg name="visualizer" default="false" />
+  <arg name="auto_grasp" default="false" />
+
+  <!-- camera extrinsic -->
+  <node pkg="tf2_ros" type="static_transform_publisher" name="camera_ee_broadcaster"
+        args="-0.05236895 0.03666473 -0.07956362 -0.008328826747513679 0.0027495380545793395 0.71525560603233 -0.6988079054538671 fr3_EE camera_link_proxy" />
+
+  <!-- RealSense -->
+  <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <arg name="align_depth" value="true" />
+    <arg name="color_width" value="640" />
+    <arg name="color_height" value="480" />
+    <arg name="color_fps" value="15" />
+    <arg name="depth_fps" value="15" />
+  </include>
+
+  <!-- YOLO -->
+  <node pkg="rbkairos_etf_services" type="yolo_node_laptop.py" name="yolo_node_laptop" output="screen">
+    <param name="model_path" value="$(arg model_path)" />
+    <param name="input_size" value="640" />
+    <param name="obj_thres" value="0.20" />
+    <param name="cls_thres" value="0.15" />
+    <param name="nms_thres" value="0.45" />
+  </node>
+
+  <!-- tracker / grasp preparation -->
+  <node pkg="rbkairos_etf_services" type="detect_and_grasp.py" name="fruit_grasp_controller" output="screen">
+    <param name="auto_grasp" value="$(arg auto_grasp)" />
+    <param name="buffer_size" value="8" />
+    <param name="min_samples" value="4" />
+    <param name="deviation_threshold" value="0.04" />
+    <param name="publish_topic" value="/vision/latest_fruit_point" />
+  </node>
+
+  <!-- optional debug -->
+  <node if="$(arg visualizer)" pkg="rbkairos_etf_services" type="visualize_detections.py" name="fruit_visualizer" output="screen" />
+</launch>
