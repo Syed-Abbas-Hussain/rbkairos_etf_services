@@ -18,10 +18,17 @@ class ActionManagerNode:
         rospy.init_node("action_manager_node", anonymous=False)
 
         # ---------- Params ----------
+        # robot_namespace identifies which physical robot this node controls.
+        # The node advertises /<robot_namespace>/action_server and connects to
+        # /<robot_namespace>/move_base and /<robot_namespace>/move_arm.
+        self.robot_ns = rospy.get_param("~robot_namespace", "robot")
+
         self.world_frame = rospy.get_param("~world_frame", "fr3_link0")
 
         # Gripper
-        self.gripper_action_name = rospy.get_param("~gripper_action", "/robot/arm/franka_gripper/move")
+        self.gripper_action_name = rospy.get_param(
+            "~gripper_action", f"/{self.robot_ns}/arm/franka_gripper/move"
+        )
         self.gripper_speed = float(rospy.get_param("~gripper_speed", 0.1))
 
         # Gripper widths (meters)
@@ -68,27 +75,31 @@ class ActionManagerNode:
         self.vision_sub = rospy.Subscriber(self.vision_topic, PointStamped, self.vision_callback)
 
         # ---------- Clients ----------
-        rospy.wait_for_service("/robot/move_base")
-        rospy.wait_for_service("/robot/move_arm")
-        
-        self.move_base_srv = rospy.ServiceProxy("/robot/move_base", MoveBase)
-        self.move_arm_srv  = rospy.ServiceProxy("/robot/move_arm", MoveArm)
+        move_base_service = f"/{self.robot_ns}/move_base"
+        move_arm_service  = f"/{self.robot_ns}/move_arm"
+        rospy.wait_for_service(move_base_service)
+        rospy.wait_for_service(move_arm_service)
+
+        self.move_base_srv = rospy.ServiceProxy(move_base_service, MoveBase)
+        self.move_arm_srv  = rospy.ServiceProxy(move_arm_service,  MoveArm)
 
         self.gripper_client = actionlib.SimpleActionClient(
             self.gripper_action_name,
             franka_gripper.msg.MoveAction
         )
-        #rospy.loginfo(f"Waiting for gripper action server: {self.gripper_action_name}")
-        #self.gripper_client.wait_for_server()
-        #rospy.loginfo("Gripper action server connected.")
 
         # ---------- Feedback Subscriber ----------
-        self.feedback_sub = rospy.Subscriber("/action_feedback", Bool, self.feedback_callback)
+        self.feedback_sub = rospy.Subscriber(
+            f"/{self.robot_ns}/action_feedback", Bool, self.feedback_callback
+        )
         self.feedback = False
 
         # ---------- Service ----------
-        self.srv = rospy.Service("action_server", ActionServer, self.handle_action)
-        rospy.loginfo("ActionOrchestrator service ready on /action_server")
+        # Advertised as /<robot_namespace>/action_server so the service_caller
+        # can address each robot independently.
+        action_server_name = f"/{self.robot_ns}/action_server"
+        self.srv = rospy.Service(action_server_name, ActionServer, self.handle_action)
+        rospy.loginfo(f"ActionOrchestrator service ready on {action_server_name}")
 
     def feedback_callback(self, msg):
         self.feedback = msg.data

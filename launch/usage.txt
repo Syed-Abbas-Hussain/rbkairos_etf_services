@@ -1,0 +1,8 @@
+# Terminal 1
+roscore
+
+# Terminal 2
+rosrun prost_ros prost_bridge.py _prost_path:=/home/ruzamladji/catkin_ws/src/prost_ros/prost/prost.py
+
+# Terminal 3
+rosrun rbkairos_etf_services service_caller.py _dry_run:=true

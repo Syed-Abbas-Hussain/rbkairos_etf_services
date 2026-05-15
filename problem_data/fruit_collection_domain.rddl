@@ -1,0 +1,404 @@
+////////////////////////////////////////////////////////////////////
+// Fruit Collection Domain — Multi-Aisle Greenhouse
+//
+// A robot harvests all ripe fruit across a multi-aisle greenhouse
+// and delivers it to an unload station. The task minimises total
+// operational time (minutes). Grasp success is stochastic; the
+// robot may need multiple attempts per fruit.
+
+// Robot navigates to unload only when bin is at capacity or
+// all remaining fruit is already loaded (no premature trips).
+////////////////////////////////////////////////////////////////////
+
+domain fruit_collection_multi_aisle {
+
+    requirements = {
+        concurrent,
+        reward-deterministic
+    };
+
+    types {
+        location       : object;
+        aisle_position : object;
+        robot          : object;
+    };
+
+    pvariables {
+
+        // non-fluents
+        unload_station(aisle_position)           : { non-fluent, bool, default = false };
+        adjacent(aisle_position, aisle_position) : { non-fluent, bool, default = false };
+        reachable_from(location, aisle_position) : { non-fluent, bool, default = false };
+        distance(aisle_position, aisle_position) : { non-fluent, real, default = 1.0  };
+        fruit_weight(location)                   : { non-fluent, real, default = 1.0  };
+        fruit_ripe(location)                     : { non-fluent, bool, default = true  };
+
+        GRASP_SUCCESS_PROB : { non-fluent, real, default = 0.8   };
+        MAX_CAPACITY       : { non-fluent, real, default = 120.0 };
+        CAPACITY_THRESHOLD : { non-fluent, real, default = 117.0 };
+
+        // state fluent
+
+        robot_at(robot, aisle_position)  : { state-fluent, bool, default = false };
+        fruit_at(location)               : { state-fluent, bool, default = false };
+        fruit_collected(robot, location) : { state-fluent, bool, default = false };
+        fruit_in_bin(robot, location)    : { state-fluent, bool, default = false };
+        fruits_unloaded(location)        : { state-fluent, bool, default = false };
+        all_fruits_done                  : { state-fluent, bool, default = false };
+
+        // visited flag — set on arrival.
+        position_visited(aisle_position)     : { state-fluent, bool, default = false };
+
+        // Previous position — used by anti U turn constraint. 
+        prev_position(robot, aisle_position) : { state-fluent, bool, default = false };
+
+        // action fluents
+
+        navigate(robot, aisle_position) : { action-fluent, bool, default = false };
+        grasp_fruit(robot, location)    : { action-fluent, bool, default = false };
+        load_to_bin(robot, location)    : { action-fluent, bool, default = false };
+        unload(robot)                   : { action-fluent, bool, default = false };
+        wait(robot)                     : { action-fluent, bool, default = false };
+    };
+
+    cpfs {
+
+        robot_at'(?r, ?a) =
+            if (navigate(?r, ?a))
+                then true
+            else if (exists_{?a2 : aisle_position} [navigate(?r, ?a2) ^ (?a2 ~= ?a)])
+                then false
+            else robot_at(?r, ?a);
+
+        // fruit disappears from plant with probability GRASP_SUCCESS_PROB on grasp.
+        // on failure it retries
+        fruit_at'(?l) =
+            if (exists_{?r : robot} [
+                    grasp_fruit(?r, ?l) ^
+                    exists_{?a : aisle_position} [robot_at(?r, ?a) ^ reachable_from(?l, ?a)] ^
+                    fruit_at(?l)
+                ])
+            then Bernoulli(1.0 - GRASP_SUCCESS_PROB)
+            else fruit_at(?l);
+
+        // fruit_collected: true once successfully grasped off plant false after unload.
+        // Stays true while fruit is in bin 
+        fruit_collected'(?r, ?l) =
+            if (unload(?r) ^
+                fruit_in_bin(?r, ?l) ^
+                exists_{?a : aisle_position} [robot_at(?r, ?a) ^ unload_station(?a)])
+                then false
+            else if (grasp_fruit(?r, ?l) ^ fruit_at(?l) ^ ~fruit_at'(?l))
+                then true
+            else if (fruit_in_bin(?r, ?l))
+                then true
+            else fruit_collected(?r, ?l);
+
+        // fruit_in_bin: set when loaded, cleared when unloaded at station.
+        fruit_in_bin'(?r, ?l) =
+            if (unload(?r) ^
+                exists_{?a : aisle_position} [robot_at(?r, ?a) ^ unload_station(?a)])
+                then false
+            else if (load_to_bin(?r, ?l) ^
+                     exists_{?a : aisle_position} [robot_at(?r, ?a) ^ reachable_from(?l, ?a)] ^
+                     fruit_collected(?r, ?l) ^
+                     ~fruit_in_bin(?r, ?l))
+                then true
+            else fruit_in_bin(?r, ?l);
+
+        // once visited always visited.
+        position_visited'(?a) =
+            position_visited(?a)
+            | exists_{?r : robot} [robot_at(?r, ?a)];
+
+        prev_position'(?r, ?a) =
+            robot_at(?r, ?a);
+
+        // permanently marks fruit as delivered after successful unload.
+        fruits_unloaded'(?l) =
+            if (exists_{?r : robot} [
+                    unload(?r) ^
+                    fruit_in_bin(?r, ?l) ^
+                    exists_{?a : aisle_position} [robot_at(?r, ?a) ^ unload_station(?a)]
+                ])
+                then true
+            else fruits_unloaded(?l);
+
+        // task complete when every ripe fruit has been delivered.
+        all_fruits_done' =
+            forall_{?l : location} [
+                ~fruit_ripe(?l) | fruits_unloaded'(?l)
+            ];
+    };
+
+    // reward
+    reward =
+        // Navigation
+        - (sum_{?r : robot, ?a1 : aisle_position, ?a2 : aisle_position} [
+              robot_at(?r, ?a1) ^ navigate(?r, ?a2) ^ adjacent(?a1, ?a2)
+          ] * distance(?a1, ?a2)) * 0.03333
+
+        // Grasp and load 0.092 min each. 
+        - (sum_{?r : robot, ?l : location} [
+              grasp_fruit(?r, ?l) * 0.092 + load_to_bin(?r, ?l) * 0.092
+          ])
+
+        // Unload 0.2666 min
+        - (sum_{?r : robot} unload(?r)) * 0.2666
+
+        // Soft abandonment signal: 5.5 departure with fruit left behind.
+        - (sum_{?r : robot, ?a1 : aisle_position, ?a2 : aisle_position} [
+              robot_at(?r, ?a1) ^ navigate(?r, ?a2) ^ adjacent(?a1, ?a2) ^
+              ~unload_station(?a1) ^ ~unload_station(?a2) ^
+              ((sum_{?l : location} [fruit_in_bin(?r, ?l) * fruit_weight(?l)]) < CAPACITY_THRESHOLD) ^
+              exists_{?l2 : location} [
+                  reachable_from(?l2, ?a1) ^ fruit_ripe(?l2) ^
+                  ((fruit_at(?l2) ^ ~fruit_collected(?r, ?l2)) |
+                   (fruit_collected(?r, ?l2) ^ ~fruit_in_bin(?r, ?l2)))
+              ]
+          ]) * 5.5
+
+        // idle penalty: 5.5 min per wasted step while task is active. 
+        - (~all_fruits_done) * ((sum_{?r : robot} wait(?r)) * 5.5)
+
+        // per-step overhead: 0.025 min. 
+        - (~all_fruits_done) * 0.025;
+
+    action-preconditions {
+
+      
+        // Exactly one action per robot per step
+        forall_{?r : robot} [
+            (sum_{?a : aisle_position} navigate(?r, ?a)) +
+            (sum_{?l : location} [grasp_fruit(?r, ?l) + load_to_bin(?r, ?l)]) +
+            unload(?r) + wait(?r) == 1
+        ];
+
+        // Can only navigate to an adjacent position.
+        forall_{?r : robot, ?a : aisle_position} [
+            navigate(?r, ?a) =>
+            exists_{?a_cur : aisle_position} [robot_at(?r, ?a_cur) ^ adjacent(?a_cur, ?a)]
+        ];
+
+        // Cannot navigate to current position.
+        forall_{?r : robot, ?a : aisle_position} [
+            navigate(?r, ?a) => ~robot_at(?r, ?a)
+        ];
+
+        // unload trip constraints
+
+        // Unload obligation: when bin >= threshold and the robot is adjacent
+        // to an unload station with no collected-but-not-yet-binned fruit left,
+        // it MUST navigate to the station.
+      
+        
+        forall_{?r : robot, ?a : aisle_position} [
+            (robot_at(?r, ?a) ^
+             ~unload_station(?a) ^
+             (sum_{?l : location} [fruit_in_bin(?r, ?l) * fruit_weight(?l)]) >= CAPACITY_THRESHOLD ^
+             exists_{?a_u : aisle_position} [adjacent(?a, ?a_u) ^ unload_station(?a_u)] ^
+             ~exists_{?l2 : location} [
+                 reachable_from(?l2, ?a) ^ fruit_ripe(?l2) ^
+                 fruit_collected(?r, ?l2) ^ ~fruit_in_bin(?r, ?l2) ^ ~fruit_at(?l2)
+             ]) =>
+            exists_{?a_u2 : aisle_position} [navigate(?r, ?a_u2) ^ unload_station(?a_u2)]
+        ];
+
+        // Navigate to unload station only when bin >= threshold 
+        // or all remaining ripe fruit is already loaded 
+        // Prevents premature unload visits when the bin is nearly empty.
+        forall_{?r : robot, ?a : aisle_position} [
+            (navigate(?r, ?a) ^ unload_station(?a)) =>
+            (
+                ((sum_{?l : location} [fruit_in_bin(?r, ?l) * fruit_weight(?l)]) >= CAPACITY_THRESHOLD)
+                |
+                (forall_{?l2 : location} [
+                    ~fruit_ripe(?l2) | fruit_in_bin(?r, ?l2) | fruits_unloaded(?l2)
+                ])
+            )
+        ];
+
+        // Cannot leave an unload station while the bin still has fruit
+        // Forces the robot to fully unload before resuming harvest
+        forall_{?r : robot, ?a1 : aisle_position, ?a2 : aisle_position} [
+            (robot_at(?r, ?a1) ^ unload_station(?a1) ^
+             navigate(?r, ?a2) ^ adjacent(?a1, ?a2)) =>
+            ~exists_{?l : location} [fruit_in_bin(?r, ?l)]
+        ];
+
+
+        //Load-before-leave: cannot navigate anywhere while ripe fruit
+        // is collected but not yet in the bin 
+        forall_{?r : robot, ?a1 : aisle_position, ?a2 : aisle_position} [
+            (robot_at(?r, ?a1) ^ navigate(?r, ?a2) ^ adjacent(?a1, ?a2) ^
+             ~unload_station(?a1)) =>
+            ~exists_{?l : location} [
+                reachable_from(?l, ?a1) ^ fruit_ripe(?l) ^
+                fruit_collected(?r, ?l) ^ ~fruit_in_bin(?r, ?l) ^ ~fruit_at(?l)
+            ]
+        ];
+
+        // Cannot leave a non-unload position unless:
+      
+        forall_{?r : robot, ?a1 : aisle_position, ?a2 : aisle_position} [
+            (robot_at(?r, ?a1) ^ navigate(?r, ?a2) ^ adjacent(?a1, ?a2) ^
+             ~unload_station(?a1)) =>
+            (
+                //   CASE 1 — position is cleared: no uncollected on-plant fruit remains, or
+                (
+                    ~exists_{?l : location} [
+                        reachable_from(?l, ?a1) ^ fruit_ripe(?l) ^
+                        fruit_collected(?r, ?l) ^ ~fruit_at(?l) ^ ~fruit_in_bin(?r, ?l)
+                    ]
+                    ^
+                    ~exists_{?l2 : location} [
+                        reachable_from(?l2, ?a1) ^ fruit_ripe(?l2) ^
+                        fruit_at(?l2) ^ ~fruit_collected(?r, ?l2) ^ ~fruit_in_bin(?r, ?l2)
+                    ]
+                )
+                |
+                    //   CASE 2 — bin is at or above capacity threshold (forced unload run).
+                ((sum_{?l3 : location} [fruit_in_bin(?r, ?l3) * fruit_weight(?l3)]) >= CAPACITY_THRESHOLD)
+            )
+        ];
+
+       
+        forall_{?r : robot, ?a1 : aisle_position, ?a2 : aisle_position} [
+            (robot_at(?r, ?a1) ^ navigate(?r, ?a2) ^ adjacent(?a1, ?a2) ^
+             ~unload_station(?a2) ^ ~position_visited(?a2) ^
+             (sum_{?l : location} [fruit_in_bin(?r, ?l) * fruit_weight(?l)]) >= CAPACITY_THRESHOLD) =>
+            exists_{?l2 : location} [
+                reachable_from(?l2, ?a2) ^ fruit_ripe(?l2) ^
+                fruit_at(?l2) ^ ~fruits_unloaded(?l2)
+            ]
+        ];
+
+        // Cannot navigate to a visited non-unload position when an adjacent
+        // unvisited position exists and bin is below threshold.
+      
+        forall_{?r : robot, ?a1 : aisle_position, ?a2 : aisle_position} [
+            (robot_at(?r, ?a1) ^ navigate(?r, ?a2) ^ adjacent(?a1, ?a2) ^
+             position_visited(?a2) ^ ~unload_station(?a2) ^
+             (sum_{?l : location} [fruit_in_bin(?r, ?l) * fruit_weight(?l)]) < CAPACITY_THRESHOLD) =>
+            ~exists_{?a3 : aisle_position} [
+                adjacent(?a1, ?a3) ^ ~unload_station(?a3) ^ ~position_visited(?a3)
+            ]
+        ];
+
+      //Anti-U-turn
+        forall_{?r : robot, ?a1 : aisle_position, ?a2 : aisle_position} [
+            (robot_at(?r, ?a1) ^
+             navigate(?r, ?a2) ^
+             adjacent(?a1, ?a2) ^
+             prev_position(?r, ?a2) ^
+             ~unload_station(?a2) ^
+             ~all_fruits_done ^
+             exists_{?a3 : aisle_position} [
+                 adjacent(?a1, ?a3) ^ (?a3 ~= ?a2) ^ ~unload_station(?a3)
+             ]) =>
+            exists_{?a4 : aisle_position} [
+                adjacent(?a1, ?a4) ^ (?a4 ~= ?a2) ^ navigate(?r, ?a4)
+            ]
+        ];
+
+    
+        // Grasp requires: robot at reachable position, fruit on plant and ripe,
+        // not already in bin, and the fruit fits within MAX_CAPACITY.
+        forall_{?r : robot, ?l : location} [
+            grasp_fruit(?r, ?l) => (
+                exists_{?a : aisle_position} [robot_at(?r, ?a) ^ reachable_from(?l, ?a)] ^
+                fruit_at(?l) ^ fruit_ripe(?l) ^ ~fruit_in_bin(?r, ?l) ^
+                ((sum_{?l2 : location} [fruit_in_bin(?r, ?l2) * fruit_weight(?l2)]) +
+                 fruit_weight(?l) <= MAX_CAPACITY)
+            )
+        ];
+
+        // Cannot grasp a new fruit while another local fruit is collected but not
+        // yet in bin
+        forall_{?r : robot, ?l : location} [
+            grasp_fruit(?r, ?l) =>
+            ~exists_{?l2 : location} [
+                (?l2 ~= ?l) ^
+                ~fruit_at(?l2) ^
+                fruit_collected(?r, ?l2) ^
+                ~fruit_in_bin(?r, ?l2)
+            ]
+        ];
+
+        // Load requires: robot at reachable position, fruit collected and off plant,
+        // not already in bin, and within MAX_CAPACITY.
+        forall_{?r : robot, ?l : location} [
+            load_to_bin(?r, ?l) => (
+                exists_{?a : aisle_position} [robot_at(?r, ?a) ^ reachable_from(?l, ?a)] ^
+                fruit_collected(?r, ?l) ^ ~fruit_at(?l) ^ ~fruit_in_bin(?r, ?l) ^
+                ((sum_{?l2 : location} [fruit_in_bin(?r, ?l2) * fruit_weight(?l2)]) +
+                 fruit_weight(?l) <= MAX_CAPACITY)
+            )
+        ];
+
+        // Unload only at a station with fruit in bin.
+        forall_{?r : robot} [
+            unload(?r) => (
+                exists_{?a : aisle_position} [robot_at(?r, ?a) ^ unload_station(?a)] ^
+                exists_{?l : location} [fruit_in_bin(?r, ?l)]
+            )
+        ];
+
+        // Must unload immediately when at a station with fruit in bin.
+        forall_{?r : robot, ?a : aisle_position} [
+            (robot_at(?r, ?a) ^ unload_station(?a) ^
+             exists_{?l : location} [fruit_in_bin(?r, ?l)]) =>
+            unload(?r)
+        ];
+
+
+        // Cannot wait when on-plant ripe fruit is accessible and fits in bin.
+       // forall_{?r : robot, ?a : aisle_position} [
+        //    (robot_at(?r, ?a) ^ ~unload_station(?a) ^
+         //    exists_{?l : location} [
+           //      reachable_from(?l, ?a) ^ fruit_ripe(?l) ^ fruit_at(?l) ^
+          ///       ~fruit_in_bin(?r, ?l) ^
+          //       ((sum_{?l2 : location} [fruit_in_bin(?r, ?l2) * fruit_weight(?l2)]) +
+           //       fruit_weight(?l) <= MAX_CAPACITY)
+           //  ]) =>
+          //  ~wait(?r)
+   //     ];
+
+        // Cannot wait while holding collected-but-not-binned fruit (must load).
+        // Zombie guard: ~fruit_at(?l) ensures zombies do not trigger this.
+     //   forall_{?r : robot, ?a : aisle_position} [
+       //     (robot_at(?r, ?a) ^ ~unload_station(?a) ^
+       //      exists_{?l : location} [
+         //        reachable_from(?l, ?a) ^ fruit_ripe(?l) ^
+         //        fruit_collected(?r, ?l) ^ ~fruit_in_bin(?r, ?l) ^ ~fruit_at(?l)
+          //   ]) =>
+          //  ~wait(?r)
+      //  ];
+
+        // Cannot wait at an unload station when ripe fruit remains to be delivered.
+       // forall_{?r : robot, ?a : aisle_position} [
+         //   (robot_at(?r, ?a) ^ unload_station(?a) ^
+         //    exists_{?l : location} [
+         //        fruit_ripe(?l) ^ ~fruits_unloaded(?l) ^
+         //        (fruit_at(?l) | fruit_collected(?r, ?l))
+         //    ]) =>
+         //   ~wait(?r)
+        //];
+
+        // Cannot wait with a full bin at a non-unload position.
+        // Forces the robot to navigate toward unload rather than idle. O(R×A).
+       // forall_{?r : robot, ?a : aisle_position} [
+         //   (robot_at(?r, ?a) ^ ~unload_station(?a) ^
+          //   (sum_{?l : location} [fruit_in_bin(?r, ?l) * fruit_weight(?l)]) >= CAPACITY_THRESHOLD) =>
+           // ~wait(?r)
+     //   ];
+
+        // Once the task is complete and bin is empty, robot must wait.
+        // No further productive action exists at this point. O(R).
+      //  forall_{?r : robot} [
+         //   (all_fruits_done ^
+         ///    ~exists_{?l : location} [fruit_in_bin(?r, ?l)]) =>
+         //   wait(?r)
+      //  ];
+    };
+}

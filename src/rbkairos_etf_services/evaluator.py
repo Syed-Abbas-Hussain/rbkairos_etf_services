@@ -40,6 +40,9 @@ class FruitHarvestingRewardEvaluator:
         self.unload_station = np.asarray(env_model._non_fluents["unload_station"], dtype=bool)
         self.discount = env_model._discount
 
+        # Whether the domain tracks previous position (new domain feature)
+        self._has_prev_position = "prev_position" in env_model._state_fluents
+
     def _get_sorted_objects(self, type_name: str):
         env_model = self.env.model
         objs = [obj for obj, obj_type in env_model._object_to_type.items() if obj_type == type_name]
@@ -52,7 +55,7 @@ class FruitHarvestingRewardEvaluator:
         return np.asarray(values, dtype=float).reshape(shape)
 
     def create_state_template(self) -> Dict[str, Any]:
-        return {
+        state = {
             "all_fruits_done": False,
             "fruit_at": np.zeros(self.num_locations, dtype=bool),
             "fruit_collected": np.zeros((self.num_robots, self.num_locations), dtype=bool),
@@ -61,6 +64,9 @@ class FruitHarvestingRewardEvaluator:
             "position_visited": np.zeros(self.num_positions, dtype=bool),
             "robot_at": np.zeros((self.num_robots, self.num_positions), dtype=bool),
         }
+        if self._has_prev_position:
+            state["prev_position"] = np.zeros((self.num_robots, self.num_positions), dtype=bool)
+        return state
 
     def create_action_template(self) -> Dict[str, Any]:
         return {
@@ -90,6 +96,10 @@ class FruitHarvestingRewardEvaluator:
         state["fruits_unloaded"] = np.asarray(raw["fruits_unloaded"], dtype=bool)
         state["position_visited"] = np.asarray(raw["position_visited"], dtype=bool)
         state["robot_at"] = self._reshape_bool(raw["robot_at"], (self.num_robots, self.num_positions))
+        if self._has_prev_position:
+            state["prev_position"] = self._reshape_bool(
+                raw["prev_position"], (self.num_robots, self.num_positions)
+            )
         return state
 
     def bin_load(self, fruit_in_bin: np.ndarray) -> np.ndarray:
@@ -159,18 +169,26 @@ class FruitHarvestingRewardEvaluator:
         next_obs["fruits_unloaded"] = np.asarray(obs["fruits_unloaded"], dtype=bool).copy()
         next_obs["position_visited"] = np.asarray(obs["position_visited"], dtype=bool).copy()
         next_obs["robot_at"] = np.asarray(obs["robot_at"], dtype=bool).copy()
+        if self._has_prev_position:
+            # prev_position' = robot_at (position before the transition)
+            next_obs["prev_position"] = np.asarray(obs["robot_at"], dtype=bool).copy()
 
         navigate = np.asarray(action["navigate"], dtype=bool)
         grasp_fruit = np.asarray(action["grasp_fruit"], dtype=bool)
         load_to_bin = np.asarray(action["load_to_bin"], dtype=bool)
         unload = np.asarray(action["unload"], dtype=bool)
 
+        # --- Navigate ---
         for robot_idx in range(self.num_robots):
             target_positions = np.where(navigate[robot_idx])[0]
             if target_positions.size > 0:
                 next_obs["robot_at"][robot_idx] = False
                 next_obs["robot_at"][robot_idx, target_positions[0]] = True
 
+        # --- position_visited: set on arrival (any robot at the position) ---
+        next_obs["position_visited"] |= np.any(next_obs["robot_at"], axis=0)
+
+        # --- Grasp fruit (always succeeds per user assumption) ---
         for loc_idx in range(self.num_locations):
             grasp_success = False
             for robot_idx in range(self.num_robots):
@@ -188,6 +206,7 @@ class FruitHarvestingRewardEvaluator:
             if grasp_success:
                 next_obs["fruit_at"][loc_idx] = False
 
+        # --- Unload and load_to_bin ---
         for robot_idx in range(self.num_robots):
             current_positions = np.where(obs["robot_at"][robot_idx])[0]
             current_pos = current_positions[0] if current_positions.size > 0 else None
@@ -210,7 +229,6 @@ class FruitHarvestingRewardEvaluator:
                     and not obs["fruit_in_bin"][robot_idx, loc_idx]
                 ):
                     next_obs["fruit_in_bin"][robot_idx, loc_idx] = True
-                    next_obs["position_visited"][current_pos] = True
 
         next_obs["all_fruits_done"] = bool(
             np.all((~self.fruit_ripe) | next_obs["fruits_unloaded"])
