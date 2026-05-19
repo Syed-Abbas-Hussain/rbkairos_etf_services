@@ -1,24 +1,28 @@
+# ============================================================
+# real-robot-deployment — single robot, 8 fruits, both aisles
+# ============================================================
+
 # Terminal 1
 roscore
 
-# Terminal 2
-rosrun prost_ros prost_bridge.py _prost_path:=/home/ruzamladji/catkin_ws/src/prost_ros/prost/prost.py
+# Terminal 2 — full launch (real robot)
+roslaunch rbkairos_etf_services bringup_real.launch
 
-# Terminal 3
-rosrun rbkairos_etf_services service_caller.py _dry_run:=true
+# Terminal 2 — dry-run (planner only, no action server calls)
+roslaunch rbkairos_etf_services bringup_real.launch dry_run:=true
 
-
-# Single robot (old instance, new domain)
-rosrun rbkairos_etf_services service_caller.py \
-  _dry_run:=true \
-  _instance_name:=instance_new_real.rddl
-
-# Two robots (default, no extra args needed)
-rosrun rbkairos_etf_services service_caller.py _dry_run:=true
+# Override instance file
+roslaunch rbkairos_etf_services bringup_real.launch instance_name:=instance_new_real.rddl
 
 
+# ============================================================
+# SIM-integration — dual robot simulation
+# ============================================================
 
+# Launch both robots independently (recommended)
 ./launch/bringup_sim_multi.sh
-# or with args:
-./launch/bringup_sim_multi.sh dry_run:=false domain_name:=fruit_collection_domain.rddl
+./launch/bringup_sim_multi.sh dry_run:=false
 
+# Launch robots individually
+roslaunch rbkairos_etf_services robot1_sim.launch dry_run:=true
+roslaunch rbkairos_etf_services robot2_sim.launch dry_run:=true
