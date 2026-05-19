@@ -336,7 +336,6 @@ class ActionManagerNode:
         arr = list(req.input)
 
         if len(arr) != 6:
-            self.feedback_pub.publish(False)
             return ActionServerResponse(False, "Input must be float64[6] = [x,y,z,R,P,Y]")
 
         timeout_s = float(req.timeout) if req.timeout > 0.0 else self.default_timeout

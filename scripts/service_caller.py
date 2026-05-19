@@ -177,17 +177,18 @@ class ServiceCaller:
             action_index = location_index
 
         elif action_name == "unload":
-            unload_station_indices = np.where(self.evaluator.unload_station)[0]
+            # The robot is already at the unload station when this action fires.
+            # Reuse the navigate pose for that position so the action_manager
+            # can do the final dock-and-tip sequence, consistent with how it
+            # handles the unload action (action_navigate).
             current_pos = np.where(self.obs["robot_at"][robot_idx])[0]
-            current_station_idx = -1
-            if current_pos.size > 0 and self.evaluator.unload_station[current_pos[0]]:
-                matching = np.where(unload_station_indices == current_pos[0])[0]
-                if matching.size > 0:
-                    current_station_idx = int(matching[0])
-            if 0 <= current_station_idx < len(self.ACTION_DATA.get(action_name, [])):
-                real_action = self.ACTION_DATA[action_name][current_station_idx]
-            else:
-                rospy.logwarn("Could not map unload action to an unload-station motion entry.")
+            if current_pos.size > 0:
+                pos_idx = int(current_pos[0])
+                nav_data = self.ACTION_DATA.get("navigate", [])
+                if 0 <= pos_idx < len(nav_data):
+                    real_action = nav_data[pos_idx]
+                else:
+                    rospy.logwarn(f"No navigate entry for unload station at position index {pos_idx}.")
 
         elif action_name in ("wait", "NOOP"):
             pass
@@ -299,10 +300,13 @@ class ServiceCaller:
 
 
 if __name__ == "__main__":
-    domain_file, instance_file, actions_file = get_problem_data_paths()
+    domain_file, instance_file, actions_file = get_problem_data_paths(
+        domain_name=rospy.get_param("~domain_name", "fruit_collection_domain.rddl"),
+        instance_name=rospy.get_param("~instance_name", "instance_multi_robot.rddl"),
+    )
 
-    print(domain_file)
-    print(instance_file)
+    rospy.loginfo(f"Domain:   {domain_file}")
+    rospy.loginfo(f"Instance: {instance_file}")
 
     sc = ServiceCaller(domain_file, instance_file, actions_file)
     sc.run()

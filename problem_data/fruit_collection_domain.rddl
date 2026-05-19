@@ -212,8 +212,11 @@ domain fruit_collection_multi_aisle {
             (
                 ((sum_{?l : location} [fruit_in_bin(?r, ?l) * fruit_weight(?l)]) >= CAPACITY_THRESHOLD)
                 |
+                // All ripe fruit is globally accounted for: either already
+                // unloaded or sitting in some robot's bin (not necessarily this one).
                 (forall_{?l2 : location} [
-                    ~fruit_ripe(?l2) | fruit_in_bin(?r, ?l2) | fruits_unloaded(?l2)
+                    ~fruit_ripe(?l2) | fruits_unloaded(?l2) |
+                    exists_{?r2 : robot} [fruit_in_bin(?r2, ?l2)]
                 ])
             )
         ];

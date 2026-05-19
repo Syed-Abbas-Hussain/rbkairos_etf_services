@@ -6,3 +6,12 @@ rosrun prost_ros prost_bridge.py _prost_path:=/home/ruzamladji/catkin_ws/src/pro
 
 # Terminal 3
 rosrun rbkairos_etf_services service_caller.py _dry_run:=true
+
+
+# Single robot (old instance, new domain)
+rosrun rbkairos_etf_services service_caller.py \
+  _dry_run:=true \
+  _instance_name:=instance_new_real.rddl
+
+# Two robots (default, no extra args needed)
+rosrun rbkairos_etf_services service_caller.py _dry_run:=true
