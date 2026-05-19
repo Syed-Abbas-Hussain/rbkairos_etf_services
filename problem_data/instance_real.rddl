@@ -1,70 +1,94 @@
 ////////////////////////////////////////////////////////////////////
-// Single-robot instance — robot1, aisle 1 only
-// SIM-integration branch: per-robot PROST instance, max-nondef-actions=1
-// Reduced capacity (MAX_CAPACITY=3.5, CAPACITY_THRESHOLD=3.0) to
-// force the planner into multi-trip-to-unload behaviour.
+// Single-robot instance — real robot deployment
+// Both aisles, 8 fruits, robot1 starts at unload station.
+// MAX_CAPACITY=120 — all fruit fits in one trip, no forced unload run.
 ////////////////////////////////////////////////////////////////////
 
-non-fluents fruit_robot1_nf {
+non-fluents fruit_real_nf {
     domain = fruit_collection_multi_aisle;
 
     objects {
-        location      : {l1, l2, l3, l4};
+        location      : {l1, l2, l3, l4, l5, l6, l7, l8};
         aisle_position: {a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, unload};
         robot         : {robot1};
     };
 
     non-fluents {
 
-        // === UNLOAD STATIONS ===
+        // === UNLOAD STATION ===
         unload_station(unload);
 
-        // === ADJACENCY (aisle 1 only — robot1 cannot reach aisle 2) ===
+        // === ADJACENCY ===
+        // Aisle 1
         adjacent(a1, a2);    adjacent(a2, a1);
         adjacent(a2, a3);    adjacent(a3, a2);
         adjacent(a3, a4);    adjacent(a4, a3);
         adjacent(a4, a5);    adjacent(a5, a4);
         adjacent(a5, a6);    adjacent(a6, a5);
 
-        // Connection to unload station (via a1)
+        // Aisle 2
+        adjacent(a1, a7);    adjacent(a7, a1);
+        adjacent(a7, a8);    adjacent(a8, a7);
+        adjacent(a8, a9);    adjacent(a9, a8);
+        adjacent(a9, a10);   adjacent(a10, a9);
+        adjacent(a10, a11);  adjacent(a11, a10);
+
+        // Connection to unload station
         adjacent(a1, unload); adjacent(unload, a1);
 
-        // === REACHABILITY (aisle 1 fruits) ===
+        // === REACHABILITY ===
         reachable_from(l1, a3);
         reachable_from(l2, a4);
         reachable_from(l3, a5);
         reachable_from(l4, a6);
+        reachable_from(l5, a8);
+        reachable_from(l6, a9);
+        reachable_from(l7, a10);
+        reachable_from(l8, a11);
 
-        // === DISTANCES (aisle 1) ===
+        // === DISTANCES ===
         distance(a1, a2)     = 3.000; distance(a2, a1)     = 3.000;
         distance(a2, a3)     = 1.000; distance(a3, a2)     = 1.000;
         distance(a3, a4)     = 1.000; distance(a4, a3)     = 1.000;
         distance(a4, a5)     = 1.000; distance(a5, a4)     = 1.000;
         distance(a5, a6)     = 1.000; distance(a6, a5)     = 1.000;
+        distance(a1, a7)     = 3.000; distance(a7, a1)     = 3.000;
+        distance(a7, a8)     = 1.000; distance(a8, a7)     = 1.000;
+        distance(a8, a9)     = 1.000; distance(a9, a8)     = 1.000;
+        distance(a9, a10)    = 1.000; distance(a10, a9)    = 1.000;
+        distance(a10, a11)   = 1.000; distance(a11, a10)   = 1.000;
         distance(a1, unload) = 3.000; distance(unload, a1) = 3.000;
 
         // === ROBOT PARAMETERS ===
         GRASP_SUCCESS_PROB = 0.65;
-        MAX_CAPACITY       = 3.5;
-        CAPACITY_THRESHOLD = 3.0;
+        MAX_CAPACITY       = 120.0;
+        CAPACITY_THRESHOLD = 117.0;
 
-        // === FRUIT WEIGHTS (aisle 1) ===
+        // === FRUIT WEIGHTS ===
         fruit_weight(l1) = 1.6;
         fruit_weight(l2) = 1.7;
         fruit_weight(l3) = 1.7;
         fruit_weight(l4) = 0.8;
+        fruit_weight(l5) = 1.3;
+        fruit_weight(l6) = 0.9;
+        fruit_weight(l7) = 0.8;
+        fruit_weight(l8) = 0.9;
 
         // === FRUIT RIPENESS ===
         fruit_ripe(l1) = true;
         fruit_ripe(l2) = true;
         fruit_ripe(l3) = true;
         fruit_ripe(l4) = true;
+        fruit_ripe(l5) = true;
+        fruit_ripe(l6) = true;
+        fruit_ripe(l7) = true;
+        fruit_ripe(l8) = true;
     };
 }
 
-instance fruit_collection_inst_robot1 {
+instance fruit_collection_inst_real {
     domain = fruit_collection_multi_aisle;
-    non-fluents = fruit_robot1_nf;
+    non-fluents = fruit_real_nf;
 
     init-state {
         robot_at(robot1, a1);
@@ -73,9 +97,13 @@ instance fruit_collection_inst_robot1 {
         fruit_at(l2);
         fruit_at(l3);
         fruit_at(l4);
+        fruit_at(l5);
+        fruit_at(l6);
+        fruit_at(l7);
+        fruit_at(l8);
     };
 
     max-nondef-actions = 1;
-    horizon = 120;
+    horizon = 80;
     discount = 1.0;
 }
