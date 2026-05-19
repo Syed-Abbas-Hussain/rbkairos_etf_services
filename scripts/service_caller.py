@@ -41,7 +41,7 @@ class ServiceCaller:
         rospy.wait_for_service('/prost_bridge/start_planning')
         rospy.wait_for_service('/prost_bridge/submit_observation')
 
-        rospy.wait_for_service('/action_server') # TODO: Uncomment this when the action server is ready
+        #rospy.wait_for_service('/action_server') # TODO: Uncomment this when the action server is ready
 
         self.start_planning = rospy.ServiceProxy('/prost_bridge/start_planning', StartPlanning)
         self.submit_obs = rospy.ServiceProxy('/prost_bridge/submit_observation', SubmitObservation)
@@ -243,8 +243,20 @@ class ServiceCaller:
             else:
                 rospy.logwarn(f"Unknown planner action '{action_name}'.")
 
-            response = self.perform_action(action_name, real_action, 50.0) #TODO: Uncomment this
-            success = response.success
+            #response = self.perform_action(action_name, real_action, 50.0) #TODO: Uncomment this
+            
+            feedback = False
+            key = input("> Input success:").strip().lower()
+            if key == "s":
+            	feedback = True
+            	rospy.loginfo("Published: SUCCESS (True)")
+            else:
+            	feedback = False
+            	rospy.loginfo("Published: FAILURE (False)")
+        
+            
+            #success = response.success
+            success = feedback
             #success = True
             # rospy.loginfo(f"Action finished with success: {success} | {response.message}")
 

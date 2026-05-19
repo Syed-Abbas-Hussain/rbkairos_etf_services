@@ -41,7 +41,7 @@ class ActionManagerNode:
  
         # "Load to bin" pose: constant position with negative x value (as you said)
         #self.LOAD_BIN_POSE = rospy.get_param("~load_bin_pose", [-0.3, 0.2, 0.35, -0.707, 0.0, 3.14])
-        self.LOAD_BIN_POSE = [-0.308, 0.192, 0.4,3.095, 0.087, 2.405]
+        self.LOAD_BIN_POSE = [-0.308, 0.192, 0.5, 3.095, 0.087, 2.405]
 
         # "Grasp" positions
         self.GRASP_POSE_1 = [0.032, -0.040, 0.811, 2.104, 0.850, 1.867]
@@ -58,8 +58,8 @@ class ActionManagerNode:
         self.SCAN_POSE_NEGATIVE = rospy.get_param("~scan_pose_negative", [0.231, -0.061, 0.803, 1.761, 0.761, 0.188])
 
         # Offset/orientation used for grasping after vision gives fruit center
-        self.VISION_GRASP_OFFSET_1 = rospy.get_param("~vision_grasp_offset_1", [-0.09, 0.0, 0.04])
-        self.VISION_GRASP_OFFSET_2 = rospy.get_param("~vision_grasp_offset_2", [-0.05, 0.05, 0.01])
+        self.VISION_GRASP_OFFSET_1 = rospy.get_param("~vision_grasp_offset_1", [-0.095, 0.0, 0.04])
+        self.VISION_GRASP_OFFSET_2 = rospy.get_param("~vision_grasp_offset_2", [-0.05, 0.055, 0.01])
         self.VISION_GRASP_RPY_1 = rospy.get_param("~vision_grasp_rpy_1", [2.104, 0.850, 1.867])
         self.VISION_GRASP_RPY_2 = rospy.get_param("~vision_grasp_rpy_2", [1.761, 0.761, 0.188])
 
@@ -85,6 +85,7 @@ class ActionManagerNode:
         # ---------- Feedback Subscriber ----------
         self.feedback_sub = rospy.Subscriber("/action_feedback", Bool, self.feedback_callback)
         self.feedback = False
+        self.real_ok = False
 
         # ---------- Service ----------
         self.srv = rospy.Service("action_server", ActionServer, self.handle_action)
@@ -365,8 +366,10 @@ class ActionManagerNode:
             # Waits for the feedback from the task detection
             time.sleep(1)
 
-            # If the feedback is not received in 1 second, the action is considered as failed
-            real_ok = ok and self.feedback
+            # If the feedback is not received in 1 second, thsse action is considered as failed
+        #self.real_ok = ok and self.feedback
+
+            # EXPERIMENT WITH THE REAL FEEDBACK <changed to real ok>
         
         return ActionServerResponse(ok, msg)
         

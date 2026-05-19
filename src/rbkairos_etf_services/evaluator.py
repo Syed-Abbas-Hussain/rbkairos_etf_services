@@ -119,7 +119,7 @@ class FruitHarvestingRewardEvaluator:
             )
             reward -= float(np.sum(self.distance * move_mask)) * 0.03333
 
-        reward -= float(np.sum(grasp_fruit) + np.sum(load_to_bin)) * 0.0666
+        reward -= float(np.sum(grasp_fruit) + np.sum(load_to_bin)) * 0.092
         reward -= float(np.sum(unload)) * 0.2666
 
         current_load = self.bin_load(fruit_in_bin)
@@ -139,11 +139,11 @@ class FruitHarvestingRewardEvaluator:
                 & np.outer(~self.unload_station, ~self.unload_station)
                 & np.outer(exists_work_at_a1, np.ones(self.num_positions, dtype=bool))
             )
-            reward -= float(np.sum(abandon_mask)) * 2.5
-
+            reward -= float(np.sum(abandon_mask)) * 5.5
+            
         if not all_fruits_done:
-            reward -= float(np.sum(wait)) * 2.5
-            reward -= 0.1666
+            reward -= float(np.sum(wait)) * 0.25
+            reward -= 0.25
 
         _ = position_visited
         _ = next_obs
