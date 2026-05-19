@@ -102,7 +102,7 @@ non-fluents fruit_multi_robot_aisle_nf_2 {
         fruit_weight(l8) = 0.9;
         
         //fruit status
-        fruit_ripe(l1) = true;
+        fruit_ripe(l1) = false;
         fruit_ripe(l2) = true;
         fruit_ripe(l3) = true;
         fruit_ripe(l4) = true;
@@ -133,6 +133,6 @@ instance fruit_collection_inst_2 {
     };
 
     max-nondef-actions = 1;  
-    horizon = 50;
+    horizon = 100;
     discount = 1.0;
 }
