@@ -8,6 +8,13 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   geometry_msgs
+  sensor_msgs
+  cv_bridge
+  image_transport
+  vision_msgs
+  tf2_ros
+  tf2_geometry_msgs
+  message_filters
   message_generation
 )
 
@@ -31,6 +38,13 @@ catkin_package(
     rospy
     std_msgs
     geometry_msgs
+    sensor_msgs
+    cv_bridge
+    image_transport
+    vision_msgs
+    tf2_ros
+    tf2_geometry_msgs
+    message_filters
     message_runtime
 )
 
@@ -39,6 +53,9 @@ catkin_install_python(PROGRAMS
   scripts/move_rbkairos.py
   scripts/service_caller.py
   scripts/action_manager.py
+  scripts/yolo_node_laptop.py
+  scripts/detect_and_grasp.py
+  scripts/visualize_detections.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

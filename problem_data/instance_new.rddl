@@ -1,0 +1,453 @@
+//////////////////////////////////////////////////////////////////////
+// Layout: 4 aisles with 1 robots
+//////////////////////////////////////////////////////////////////////
+
+non-fluents fruit_multi_robot_aisle_nf {
+    domain = fruit_collection_multi_aisle;
+
+    objects {
+        location : {l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20, l21, l22, l23, l24, l25, l26, l27, l28, l29, l30, l31, l32, l33, l34, l35, l36, l37, l38, l39, l40, l41, l42, l43, l44, l45, l46, l47, l48, l49, l50, l51, l52, l53, l54, l55, l56, l57, l58, l59, l60};
+        aisle_position : {a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, unload1, unload2};
+        robot : {robot1};
+    };
+
+    non-fluents {
+
+        //unloading stations
+        unload_station(unload1);
+        unload_station(unload2);
+
+        // === ADJACENCY ===
+        // aisle1 forward
+        adjacent(a1, a2);
+        adjacent(a2, a1);
+        adjacent(a2, a3);
+        adjacent(a3, a2);
+        adjacent(a3, a4);
+        adjacent(a4, a3);
+        adjacent(a4, a5);
+        adjacent(a5, a4);
+        adjacent(a5, a6);
+        adjacent(a6, a5);
+
+       // aisle2 backward
+        adjacent(a12, a11);
+        adjacent(a11, a12);
+        adjacent(a11, a10);
+        adjacent(a10, a11);
+        adjacent(a10, a9);
+        adjacent(a9, a10);
+        adjacent(a9, a8);
+        adjacent(a8, a9);
+        adjacent(a8, a7);
+        adjacent(a7, a8);
+
+       // aisle3 forward
+        adjacent(a13, a14);
+        adjacent(a14, a13);
+        adjacent(a14, a15);
+        adjacent(a15, a14);
+        adjacent(a15, a16);
+        adjacent(a16, a15);
+        adjacent(a16, a17);
+        adjacent(a17, a16);
+        adjacent(a17, a18);
+        adjacent(a18, a17);
+
+        // Aisle 4 backward
+        adjacent(a24, a23);
+        adjacent(a23, a24);
+        adjacent(a23, a22);
+        adjacent(a22, a23);
+        adjacent(a22, a21);
+        adjacent(a21, a22);
+        adjacent(a21, a20);
+        adjacent(a20, a21);
+        adjacent(a20, a19);
+        adjacent(a19, a20);
+
+        // Between-aisle transitions (zigzag)
+        adjacent(a6, a12);
+        adjacent(a12, a6);
+        adjacent(a7, a13);
+        adjacent(a13, a7);
+        adjacent(a18, a24);
+        adjacent(a24, a18);
+
+        // Connections to unload stations
+        adjacent(a1, unload1);
+        adjacent(unload1, a1);
+        adjacent(a6, unload2);
+        adjacent(unload2, a6);
+        adjacent(a7, unload1);
+        adjacent(unload1, a7);
+        adjacent(a12, unload2);
+        adjacent(unload2, a12);
+        adjacent(a13, unload1);
+        adjacent(unload1, a13);
+        adjacent(a18, unload2);
+        adjacent(unload2, a18);
+        adjacent(a19, unload1);
+        adjacent(unload1, a19);
+        adjacent(a24, unload2);
+        adjacent(unload2, a24);
+
+        // reachability ===
+        // Aisle 1
+        // Position a1: 3 fruits
+        reachable_from(l1, a1);  
+        reachable_from(l2, a1);  
+        reachable_from(l3, a1);  
+        
+        reachable_from(l4, a2);  
+        reachable_from(l5, a2);  
+        
+        reachable_from(l6, a3);  
+        reachable_from(l7, a3);  
+       
+        reachable_from(l8, a4);  
+        reachable_from(l9, a4);  
+        reachable_from(l10, a4);  
+        
+        reachable_from(l11, a5);  
+        reachable_from(l12, a5);  
+        reachable_from(l13, a5);  
+      
+        reachable_from(l14, a6);  
+        reachable_from(l15, a6);  
+        reachable_from(l16, a6);  
+
+        
+        reachable_from(l17, a7);  
+        reachable_from(l18, a7);  
+        
+        reachable_from(l19, a8);  
+        reachable_from(l20, a8);  
+        
+        reachable_from(l21, a9);  
+        reachable_from(l22, a9);  
+        reachable_from(l23, a9);  
+        
+        reachable_from(l24, a10);  
+        reachable_from(l25, a10);  
+        reachable_from(l26, a10);  
+        
+        reachable_from(l27, a11);  
+        reachable_from(l28, a11);  
+        reachable_from(l29, a11); 
+        
+        reachable_from(l30, a12);  
+        reachable_from(l31, a12);  
+
+        
+        reachable_from(l32, a13);  
+        reachable_from(l33, a13);  
+        reachable_from(l34, a13);  
+        
+        reachable_from(l35, a14);  
+        reachable_from(l36, a14);  
+        reachable_from(l37, a14);  
+        
+        reachable_from(l38, a15);  
+        reachable_from(l39, a15);  
+        reachable_from(l40, a15);  
+        
+        reachable_from(l41, a16);  
+        reachable_from(l42, a16);  
+        reachable_from(l43, a16);  
+      
+        reachable_from(l44, a17);  
+        reachable_from(l45, a17);  
+        
+        reachable_from(l46, a18); 
+        reachable_from(l47, a18);  
+        reachable_from(l48, a18);  
+
+        
+        reachable_from(l49, a19);  
+        reachable_from(l50, a19);  
+       
+        reachable_from(l51, a20);  
+        reachable_from(l52, a20);  
+        
+        reachable_from(l53, a21);  
+        reachable_from(l54, a21);  
+        reachable_from(l55, a21);  
+        
+        reachable_from(l56, a22);  
+        reachable_from(l57, a22);  
+        reachable_from(l58, a22);  
+        
+        reachable_from(l59, a23);  
+        reachable_from(l60, a23);  
+        
+
+        // Distances
+        distance(a1, a2) = 1.000;
+        distance(a2, a1) = 1.000;
+        distance(a2, a3) = 1.000;
+        distance(a3, a2) = 1.000;
+        distance(a3, a4) = 1.000;
+        distance(a4, a3) = 1.000;
+        distance(a4, a5) = 1.000;
+        distance(a5, a4) = 1.000;
+        distance(a5, a6) = 1.000;
+        distance(a6, a5) = 1.000;
+        distance(a12, a11) = 1.000;
+        distance(a11, a12) = 1.000;
+        distance(a11, a10) = 1.000;
+        distance(a10, a11) = 1.000;
+        distance(a10, a9) = 1.000;
+        distance(a9, a10) = 1.000;
+        distance(a9, a8) = 1.000;
+        distance(a8, a9) = 1.000;
+        distance(a8, a7) = 1.000;
+        distance(a7, a8) = 1.000;
+        distance(a13, a14) = 1.000;
+        distance(a14, a13) = 1.000;
+        distance(a14, a15) = 1.000;
+        distance(a15, a14) = 1.000;
+        distance(a15, a16) = 1.000;
+        distance(a16, a15) = 1.000;
+        distance(a16, a17) = 1.000;
+        distance(a17, a16) = 1.000;
+        distance(a17, a18) = 1.000;
+        distance(a18, a17) = 1.000;
+        distance(a24, a23) = 1.000;
+        distance(a23, a24) = 1.000;
+        distance(a23, a22) = 1.000;
+        distance(a22, a23) = 1.000;
+        distance(a22, a21) = 1.000;
+        distance(a21, a22) = 1.000;
+        distance(a21, a20) = 1.000;
+        distance(a20, a21) = 1.000;
+        distance(a20, a19) = 1.000;
+        distance(a19, a20) = 1.000;
+        distance(a6, a12) = 5.000;
+        distance(a12, a6) = 5.000;
+        distance(a7, a13) = 5.000;
+        distance(a13, a7) = 5.000;
+        distance(a18, a24) = 5.000;
+        distance(a24, a18) = 5.000;
+        distance(a1, unload1) = 8.1;
+        distance(unload1, a1) = 8.1;
+        distance(a6, unload2) = 8.1;
+        distance(unload2, a6) = 8.1;
+        distance(a7, unload1) = 3.9;
+        distance(unload1, a7) = 3.9;
+        distance(a12, unload2) = 3.9;
+        distance(unload2, a12) = 3.9;
+        distance(a13, unload1) = 3.9;
+        distance(unload1, a13) = 3.9;
+        distance(a18, unload2) = 3.9;
+        distance(unload2, a18) = 3.9;
+        distance(a19, unload1) = 8.1;
+        distance(unload1, a19) = 8.1;
+        distance(a24, unload2) = 8.1;
+        distance(unload2, a24) = 8.1;
+        
+        GRASP_SUCCESS_PROB = 0.8;
+        MAX_CAPACITY = 120.0;
+        CAPACITY_THRESHOLD = 117.0;
+
+        // fruit weights
+        fruit_weight(l1) = 1.6;
+        fruit_weight(l2) = 1.3;
+        fruit_weight(l3) = 1.7;
+        fruit_weight(l4) = 1.3;
+        fruit_weight(l5) = 1.6;
+        fruit_weight(l6) = 1.4;
+        fruit_weight(l7) = 0.9;
+        fruit_weight(l8) = 1.9;
+        fruit_weight(l9) = 1.2;
+        fruit_weight(l10) = 1.0;
+        fruit_weight(l11) = 1.3;
+        fruit_weight(l12) = 1.3;
+        fruit_weight(l13) = 0.8;
+        fruit_weight(l14) = 0.6;
+        fruit_weight(l15) = 0.8;
+        fruit_weight(l16) = 0.9;
+        fruit_weight(l17) = 0.9;
+        fruit_weight(l18) = 1.5;
+        fruit_weight(l19) = 1.5;
+        fruit_weight(l20) = 1.3;
+        fruit_weight(l21) = 1.2;
+        fruit_weight(l22) = 0.7;
+        fruit_weight(l23) = 1.4;
+        fruit_weight(l24) = 0.8;
+        fruit_weight(l25) = 1.6;
+        fruit_weight(l26) = 1.2;
+        fruit_weight(l27) = 1.6;
+        fruit_weight(l28) = 1.5;
+        fruit_weight(l29) = 0.6;
+        fruit_weight(l30) = 0.8;
+        fruit_weight(l31) = 1.5;
+        fruit_weight(l32) = 0.8;
+        fruit_weight(l33) = 1.2;
+        fruit_weight(l34) = 1.3;
+        fruit_weight(l35) = 1.5;
+        fruit_weight(l36) = 1.8;
+        fruit_weight(l37) = 1.5;
+        fruit_weight(l38) = 1.6;
+        fruit_weight(l39) = 1.8;
+        fruit_weight(l40) = 0.6;
+        fruit_weight(l41) = 1.2;
+        fruit_weight(l42) = 1.3;
+        fruit_weight(l43) = 0.6;
+        fruit_weight(l44) = 1.2;
+        fruit_weight(l45) = 1.4;
+        fruit_weight(l46) = 1.5;
+        fruit_weight(l47) = 1.8;
+        fruit_weight(l48) = 1.5;
+        fruit_weight(l49) = 1.5;
+        fruit_weight(l50) = 1.1;
+        fruit_weight(l51) = 1.3;
+        fruit_weight(l52) = 0.9;
+        fruit_weight(l53) = 1.5;
+        fruit_weight(l54) = 0.9;
+        fruit_weight(l55) = 0.9;
+        fruit_weight(l56) = 1.5;
+        fruit_weight(l57) = 1.8;
+        fruit_weight(l58) = 0.7;
+        fruit_weight(l59) = 0.8;
+        fruit_weight(l60) = 1.7;
+        
+        // fruit status
+        fruit_ripe(l1) = true;
+        fruit_ripe(l2) = true;
+        fruit_ripe(l3) = true;
+        fruit_ripe(l4) = true;
+        fruit_ripe(l5) = true;
+        fruit_ripe(l6) = true;
+        fruit_ripe(l7) = true;
+        fruit_ripe(l8) = false;  
+        fruit_ripe(l9) = true;
+        fruit_ripe(l10) = true;
+        fruit_ripe(l11) = true;
+        fruit_ripe(l12) = true;
+        fruit_ripe(l13) = false; 
+        fruit_ripe(l14) = true;
+        fruit_ripe(l15) = true;
+        fruit_ripe(l16) = true;
+        fruit_ripe(l17) = true;
+        fruit_ripe(l18) = true;
+        fruit_ripe(l19) = true;
+        fruit_ripe(l20) = true;
+        fruit_ripe(l21) = true;
+        fruit_ripe(l22) = true;
+        fruit_ripe(l23) = true;
+        fruit_ripe(l24) = true;
+        fruit_ripe(l25) = true;
+        fruit_ripe(l26) = true;
+        fruit_ripe(l27) = true;
+        fruit_ripe(l28) = true;
+        fruit_ripe(l29) = true;
+        fruit_ripe(l30) = true;
+        fruit_ripe(l31) = false;  
+        fruit_ripe(l32) = false;  
+        fruit_ripe(l33) = true;
+        fruit_ripe(l34) = true;
+        fruit_ripe(l35) = true;
+        fruit_ripe(l36) = true;
+        fruit_ripe(l37) = true;
+        fruit_ripe(l38) = true;
+        fruit_ripe(l39) = true;
+        fruit_ripe(l40) = true;
+        fruit_ripe(l41) = true;
+        fruit_ripe(l42) = true;
+        fruit_ripe(l43) = true;
+        fruit_ripe(l44) = true;
+        fruit_ripe(l45) = true;
+        fruit_ripe(l46) = true;
+        fruit_ripe(l47) = true;
+        fruit_ripe(l48) = true;
+        fruit_ripe(l49) = true;
+        fruit_ripe(l50) = false;  
+        fruit_ripe(l51) = true;
+        fruit_ripe(l52) = true;
+        fruit_ripe(l53) = true;
+        fruit_ripe(l54) = true;
+        fruit_ripe(l55) = true;
+        fruit_ripe(l56) = true;
+        fruit_ripe(l57) = true;
+        fruit_ripe(l58) = true;
+        fruit_ripe(l59) = true;
+        fruit_ripe(l60) = true;
+    };
+}
+
+instance fruit_collection_inst_1 {
+    domain = fruit_collection_multi_aisle;
+    non-fluents = fruit_multi_robot_aisle_nf;
+
+    init-state {
+        // robot1: starts at a1
+        robot_at(robot1, a1);
+        
+        // All fruits initially present
+        fruit_at(l1);
+        fruit_at(l2);
+        fruit_at(l3);
+        fruit_at(l4);
+        fruit_at(l5);
+        fruit_at(l6);
+        fruit_at(l7);
+        fruit_at(l8);
+        fruit_at(l9);
+        fruit_at(l10);
+        fruit_at(l11);
+        fruit_at(l12);
+        fruit_at(l13);
+        fruit_at(l14);
+        fruit_at(l15);
+        fruit_at(l16);
+        fruit_at(l17);
+        fruit_at(l18);
+        fruit_at(l19);
+        fruit_at(l20);
+        fruit_at(l21);
+        fruit_at(l22);
+        fruit_at(l23);
+        fruit_at(l24);
+        fruit_at(l25);
+        fruit_at(l26);
+        fruit_at(l27);
+        fruit_at(l28);
+        fruit_at(l29);
+        fruit_at(l30);
+        fruit_at(l31);
+        fruit_at(l32);
+        fruit_at(l33);
+        fruit_at(l34);
+        fruit_at(l35);
+        fruit_at(l36);
+        fruit_at(l37);
+        fruit_at(l38);
+        fruit_at(l39);
+        fruit_at(l40);
+        fruit_at(l41);
+        fruit_at(l42);
+        fruit_at(l43);
+        fruit_at(l44);
+        fruit_at(l45);
+        fruit_at(l46);
+        fruit_at(l47);
+        fruit_at(l48);
+        fruit_at(l49);
+        fruit_at(l50);
+        fruit_at(l51);
+        fruit_at(l52);
+        fruit_at(l53);
+        fruit_at(l54);
+        fruit_at(l55);
+        fruit_at(l56);
+        fruit_at(l57);
+        fruit_at(l58);
+        fruit_at(l59);
+        fruit_at(l60);
+    };
+
+    max-nondef-actions = 1;  
+    horizon = 170; // horizon
+    discount = 1.0;
+}
