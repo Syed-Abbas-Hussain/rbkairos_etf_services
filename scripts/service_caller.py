@@ -32,16 +32,18 @@ def get_problem_data_paths(
 
 
 class ServiceCaller:
-    TERMINAL_PLANNER_ACTIONS = {"FAILED", "ROUND_END", "ERROR"}
+    TERMINAL_PLANNER_ACTIONS = {"ERROR"}
+    RESTART_PLANNER_ACTIONS  = {"ROUND_END", "FAILED"}
+    MAX_PLANNING_RESTARTS    = 5
 
     def __init__(self, domain_file, instance_file, actions_file):
-        rospy.init_node("prost_service_caller")
+        bridge_ns = rospy.get_param("~prost_bridge_ns", "/prost_bridge")
 
-        rospy.wait_for_service('/prost_bridge/start_planning')
-        rospy.wait_for_service('/prost_bridge/submit_observation')
+        rospy.wait_for_service(f"{bridge_ns}/start_planning")
+        rospy.wait_for_service(f"{bridge_ns}/submit_observation")
 
-        self.start_planning = rospy.ServiceProxy('/prost_bridge/start_planning', StartPlanning)
-        self.submit_obs = rospy.ServiceProxy('/prost_bridge/submit_observation', SubmitObservation)
+        self.start_planning = rospy.ServiceProxy(f"{bridge_ns}/start_planning", StartPlanning)
+        self.submit_obs = rospy.ServiceProxy(f"{bridge_ns}/submit_observation", SubmitObservation)
 
         with open(domain_file, 'r') as f:
             self.domain = f.read()
@@ -72,6 +74,7 @@ class ServiceCaller:
         self.loc_to_idx = {name: i for i, name in enumerate(self.locations)}
 
         self.idle_count = 0
+        self._planning_restarts = 0
 
         # When dry_run=True the node skips all action-server calls and treats
         # every action as instantly successful.  Useful for testing the planner
@@ -300,6 +303,13 @@ class ServiceCaller:
 
 
 if __name__ == "__main__":
+    rospy.init_node("prost_service_caller")
+
+    startup_delay = rospy.get_param("~startup_delay", 0.0)
+    if startup_delay > 0:
+        rospy.loginfo(f"Startup delay: {startup_delay}s — waiting for other planners to initialize.")
+        rospy.sleep(startup_delay)
+
     domain_file, instance_file, actions_file = get_problem_data_paths(
         domain_name=rospy.get_param("~domain_name", "fruit_collection_domain.rddl"),
         instance_name=rospy.get_param("~instance_name", "instance_multi_robot.rddl"),

@@ -1,0 +1,32 @@
+<launch>
+
+  <arg name="dry_run"        default="true"  />
+  <arg name="domain_name"    default="fruit_collection_domain.rddl" />
+  <arg name="prost_path"     default="$(find prost_ros)/prost/prost.py" />
+  <arg name="search_engine"  default="[Prost -s 1 -se [IPC2014 -t 1.0]]" />
+
+  <group ns="robot1">
+
+    <node pkg="prost_ros"
+          type="prost_bridge.py"
+          name="prost_bridge"
+          output="screen"
+          cwd="node">
+      <param name="port"          value="2323" />
+      <param name="prost_path"    value="$(arg prost_path)" />
+      <param name="search_engine" value="$(arg search_engine)" />
+    </node>
+
+    <node pkg="rbkairos_etf_services"
+          type="service_caller.py"
+          name="service_caller"
+          output="screen">
+      <param name="prost_bridge_ns" value="/robot1/prost_bridge" />
+      <param name="domain_name"     value="$(arg domain_name)" />
+      <param name="instance_name"   value="instance_robot1.rddl" />
+      <param name="dry_run"         value="$(arg dry_run)" />
+    </node>
+
+  </group>
+
+</launch>

@@ -270,10 +270,14 @@ domain fruit_collection_multi_aisle {
             (robot_at(?r, ?a1) ^ navigate(?r, ?a2) ^ adjacent(?a1, ?a2) ^
              ~unload_station(?a2) ^ ~position_visited(?a2) ^
              (sum_{?l : location} [fruit_in_bin(?r, ?l) * fruit_weight(?l)]) >= CAPACITY_THRESHOLD) =>
-            exists_{?l2 : location} [
-                reachable_from(?l2, ?a2) ^ fruit_ripe(?l2) ^
-                fruit_at(?l2) ^ ~fruits_unloaded(?l2)
-            ]
+            (
+                exists_{?l2 : location} [
+                    reachable_from(?l2, ?a2) ^ fruit_ripe(?l2) ^
+                    fruit_at(?l2) ^ ~fruits_unloaded(?l2)
+                ]
+                |
+                exists_{?a_u : aisle_position} [adjacent(?a2, ?a_u) ^ unload_station(?a_u)]
+            )
         ];
 
         // Cannot navigate to a visited non-unload position when an adjacent
@@ -390,11 +394,11 @@ domain fruit_collection_multi_aisle {
 
         // Cannot wait with a full bin at a non-unload position.
         // Forces the robot to navigate toward unload rather than idle. O(R×A).
-       // forall_{?r : robot, ?a : aisle_position} [
-         //   (robot_at(?r, ?a) ^ ~unload_station(?a) ^
-          //   (sum_{?l : location} [fruit_in_bin(?r, ?l) * fruit_weight(?l)]) >= CAPACITY_THRESHOLD) =>
-           // ~wait(?r)
-     //   ];
+        forall_{?r : robot, ?a : aisle_position} [
+            (robot_at(?r, ?a) ^ ~unload_station(?a) ^
+             (sum_{?l : location} [fruit_in_bin(?r, ?l) * fruit_weight(?l)]) >= CAPACITY_THRESHOLD) =>
+            ~wait(?r)
+        ];
 
         // Once the task is complete and bin is empty, robot must wait.
         // No further productive action exists at this point. O(R).

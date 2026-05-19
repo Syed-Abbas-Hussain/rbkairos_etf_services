@@ -185,8 +185,10 @@ class FruitHarvestingRewardEvaluator:
                 next_obs["robot_at"][robot_idx] = False
                 next_obs["robot_at"][robot_idx, target_positions[0]] = True
 
-        # --- position_visited: set on arrival (any robot at the position) ---
-        next_obs["position_visited"] |= np.any(next_obs["robot_at"], axis=0)
+        # Mark the position the robot occupies BEFORE moving as visited.
+        # Matches the RDDL CPF: position_visited'(?a) = position_visited(?a) | robot_at(?r, ?a)
+        # which uses the current-state robot_at, not the next-state one.
+        next_obs["position_visited"] |= np.any(np.asarray(obs["robot_at"], dtype=bool), axis=0)
 
         # --- Grasp fruit (always succeeds per user assumption) ---
         for loc_idx in range(self.num_locations):
