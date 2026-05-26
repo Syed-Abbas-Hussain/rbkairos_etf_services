@@ -18,7 +18,7 @@ from rbkairos_etf_services.evaluator import FruitHarvestingRewardEvaluator
 
 def get_problem_data_paths(
     package_name="rbkairos_etf_services",
-    domain_name="domain_new.rddl",
+    domain_name="fruit_collection_domain.rddl",
     instance_name="instance_new_real.rddl",
     actions_name="actions.json",
     ):
