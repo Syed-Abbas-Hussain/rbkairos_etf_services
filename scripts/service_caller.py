@@ -18,7 +18,7 @@ from rbkairos_etf_services.evaluator import FruitHarvestingRewardEvaluator
 def get_problem_data_paths(
     package_name="rbkairos_etf_services",
     domain_name="fruit_collection_domain.rddl",
-    instance_name="instance_multi_robot.rddl",
+    instance_name="instance_new_real.rddl",
     actions_name="actions.json",
 ):
     rp = rospkg.RosPack()
@@ -82,6 +82,10 @@ class ServiceCaller:
         self.dry_run = rospy.get_param("~dry_run", False)
         if self.dry_run:
             rospy.logwarn("DRY RUN mode: action server calls are SKIPPED, all actions assumed successful.")
+
+        self.manual_input = rospy.get_param("~manual_input", False)
+        if self.manual_input:
+            rospy.logwarn("MANUAL INPUT mode: you will be prompted after each action (s=success, f=failure).")
 
         # Per-robot action server proxies — created lazily on first use
         self._robot_action_proxies = {}
@@ -199,7 +203,7 @@ class ServiceCaller:
         else:
             rospy.logwarn(f"Unknown planner action '{action_name}'.")
 
-        # Execute on the physical robot (assumed to always succeed)
+        # Execute on the physical robot
         if action_name not in ("wait", "NOOP") and not self.dry_run:
             try:
                 proxy = self._get_robot_proxy(robot_name)
@@ -278,12 +282,19 @@ class ServiceCaller:
                 if single_action_name == "NOOP":
                     continue
 
+                if self.manual_input:
+                    key = input(f"  [{single_action_name} {single_action_params}] success? [s/f]: ").strip().lower()
+                    success = (key == "s")
+                    rospy.loginfo(f"  -> {'SUCCESS' if success else 'FAILURE'}")
+                else:
+                    success = True
+
                 if single_action_name == "unload":
-                    observed_action["unload"][robot_idx] = True
+                    observed_action["unload"][robot_idx] = success
                 elif single_action_name == "wait":
-                    observed_action["wait"][robot_idx] = True
+                    observed_action["wait"][robot_idx] = success
                 elif action_index >= 0:
-                    observed_action[single_action_name][robot_idx][action_index] = True
+                    observed_action[single_action_name][robot_idx][action_index] = success
                 else:
                     rospy.logwarn(
                         f"Skipping state update for '{single_action_name}': target index not resolved."
@@ -312,7 +323,7 @@ if __name__ == "__main__":
 
     domain_file, instance_file, actions_file = get_problem_data_paths(
         domain_name=rospy.get_param("~domain_name", "fruit_collection_domain.rddl"),
-        instance_name=rospy.get_param("~instance_name", "instance_multi_robot.rddl"),
+        instance_name=rospy.get_param("~instance_name", "instance_new_real.rddl"),
     )
 
     rospy.loginfo(f"Domain:   {domain_file}")

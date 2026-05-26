@@ -122,7 +122,7 @@ instance fruit_collection_inst_2 {
         robot_at(robot1, a1);
         
         // All fruits initially present
-        //fruit_at(l1);
+        fruit_at(l1);
         fruit_at(l2);
         fruit_at(l3);
         fruit_at(l4);
