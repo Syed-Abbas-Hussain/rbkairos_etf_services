@@ -249,11 +249,11 @@ class ServiceCaller:
             feedback = False
             key = input("> Input success:").strip().lower()
             if key == "s":
-            	feedback = True
-            	rospy.loginfo("Published: SUCCESS (True)")
+                feedback = True
+                rospy.loginfo("Published: SUCCESS (True)")
             else:
-            	feedback = False
-            	rospy.loginfo("Published: FAILURE (False)")
+                feedback = False
+                rospy.loginfo("Published: FAILURE (False)")
         
             
             #success = response.success
