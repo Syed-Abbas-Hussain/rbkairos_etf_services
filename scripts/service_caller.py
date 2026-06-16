@@ -73,6 +73,15 @@ class ServiceCaller:
         self.pos_to_idx = {name: i for i, name in enumerate(self.positions)}
         self.loc_to_idx = {name: i for i, name in enumerate(self.locations)}
 
+        # Global actions.json lookup order, independent of each robot's local RDDL instance order.
+        # Example: robot2 may see a21 as local index 0, but in shared actions.json a21 is index 20.
+        # These maps convert target names like a21/l55 to the correct actions.json row.
+        # Local evaluator indexes are still used separately for observed_action updates.
+        self.navigate_action_names = ["a{}".format(index) for index in range(1, 41)] + ["unload1", "unload2"]
+        self.location_action_names = ["l{}".format(index) for index in range(1, 129)]
+        self.navigate_action_to_idx = { name: index for index, name in enumerate(self.navigate_action_names) }
+        self.location_action_to_idx = { name: index for index, name in enumerate(self.location_action_names) }
+
         self.idle_count = 0
         self._planning_restarts = 0
 
@@ -87,8 +96,13 @@ class ServiceCaller:
         self._robot_action_proxies = {}
 
     def _get_robot_proxy(self, robot_name: str):
+        sim_robot_ns = {
+            "robot1": "robot",
+            "robot2": "robot_b",
+        }.get(robot_name, robot_name)
+ 
         if robot_name not in self._robot_action_proxies:
-            service_name = f"/{robot_name}/action_server"
+            service_name = f"/{sim_robot_ns}/sim_action_server"
             rospy.loginfo(f"Waiting for action server: {service_name}")
             rospy.wait_for_service(service_name)
             self._robot_action_proxies[robot_name] = rospy.ServiceProxy(service_name, ActionServer)
@@ -114,6 +128,15 @@ class ServiceCaller:
             location_index = self.loc_to_idx.get(action_params[1], -1)
 
         return robot_idx, aisle_index, location_index
+
+    # Convert an action target name to its shared actions.json index.
+    # Returns -1 when the action type or target has no valid motion entry.  
+    def get_action_data_index(self, action_name, target_name):
+        if action_name == "navigate":
+            return self.navigate_action_to_idx.get(target_name, -1)
+        if action_name in ("grasp_fruit", "load_to_bin"):
+            return self.location_action_to_idx.get(target_name, -1)
+        return -1
 
     # ------------------------------------------------------------------
     # Observation submission helpers
@@ -157,41 +180,69 @@ class ServiceCaller:
         """
         robot_idx, aisle_index, location_index = self.parse_action(action_name, action_params)
         robot_name = self.robot_names[robot_idx]
+        
+        # data_index selects the real/sim motion from shared actions.json.
+        # action_index remains the robot-local RDDL index for evaluator updates.
+        target_name = action_params[1] if len(action_params) >= 2 else None
+        data_index = self.get_action_data_index(action_name, target_name)
 
         real_action = np.zeros(6, dtype=float)
         action_index = -1
+        action_success = True
 
         if action_name == "navigate":
-            if 0 <= aisle_index < len(self.ACTION_DATA.get(action_name, [])):
-                real_action = self.ACTION_DATA[action_name][aisle_index]
+            if 0 <= data_index < len(self.ACTION_DATA.get(action_name, [])):
+                real_action = self.ACTION_DATA[action_name][data_index]
             else:
-                rospy.logwarn(f"No motion entry for navigate target index {aisle_index}.")
+                rospy.logwarn(
+                    f"No motion entry for navigate target {target_name} (action-data index {data_index})."
+                )
             action_index = aisle_index
 
         elif action_name == "grasp_fruit":
-            if 0 <= location_index < len(self.ACTION_DATA.get(action_name, [])):
-                real_action = self.ACTION_DATA[action_name][location_index]
+            if 0 <= data_index < len(self.ACTION_DATA.get(action_name, [])):
+                real_action = self.ACTION_DATA[action_name][data_index]
             else:
-                rospy.logwarn(f"No motion entry for grasp target index {location_index}.")
+                rospy.logwarn(
+                    f"No motion entry for grasp target {target_name} (action-data index {data_index})."
+                )
             action_index = location_index
 
         elif action_name == "load_to_bin":
-            real_action = self.ACTION_DATA[action_name][0]
+            if 0 <= data_index < len(self.ACTION_DATA.get(action_name, [])):
+                real_action = self.ACTION_DATA[action_name][data_index]
+            else:
+                rospy.logwarn(
+                    f"No motion entry for load target {target_name} (action-data index {data_index})."
+                )
             action_index = location_index
 
+        # elif action_name == "unload":
+        #     # The robot is already at the unload station when this action fires.
+        #     # Reuse the navigate pose for that position so the action_manager
+        #     # can do the final dock-and-tip sequence, consistent with how it
+        #     # handles the unload action (action_navigate).
+        #     current_pos = np.where(self.obs["robot_at"][robot_idx])[0]
+        #     if current_pos.size > 0:
+        #         pos_idx = int(current_pos[0])
+        #         nav_data = self.ACTION_DATA.get("navigate", [])
+        #         if 0 <= pos_idx < len(nav_data):
+        #             real_action = nav_data[pos_idx]
+        #         else:
+        #             rospy.logwarn(f"No navigate entry for unload station at position index {pos_idx}.")
+        
         elif action_name == "unload":
-            # The robot is already at the unload station when this action fires.
-            # Reuse the navigate pose for that position so the action_manager
-            # can do the final dock-and-tip sequence, consistent with how it
-            # handles the unload action (action_navigate).
+            unload_station_indices = np.where(self.evaluator.unload_station)[0]
             current_pos = np.where(self.obs["robot_at"][robot_idx])[0]
-            if current_pos.size > 0:
-                pos_idx = int(current_pos[0])
-                nav_data = self.ACTION_DATA.get("navigate", [])
-                if 0 <= pos_idx < len(nav_data):
-                    real_action = nav_data[pos_idx]
-                else:
-                    rospy.logwarn(f"No navigate entry for unload station at position index {pos_idx}.")
+            current_station_idx = -1
+            if current_pos.size > 0 and self.evaluator.unload_station[current_pos[0]]:
+                matching = np.where(unload_station_indices == current_pos[0])[0]
+                if matching.size > 0:
+                    current_station_idx = int(matching[0])
+            if 0 <= current_station_idx < len(self.ACTION_DATA.get(action_name, [])):
+                real_action = self.ACTION_DATA[action_name][current_station_idx]
+            else:
+                rospy.logwarn("Could not map unload action to an unload-station motion entry.")
 
         elif action_name in ("wait", "NOOP"):
             pass
@@ -199,15 +250,22 @@ class ServiceCaller:
         else:
             rospy.logwarn(f"Unknown planner action '{action_name}'.")
 
-        # Execute on the physical robot (assumed to always succeed)
+        # Execute on the physical robot/sim and keep the returned success flag.
         if action_name not in ("wait", "NOOP") and not self.dry_run:
             try:
                 proxy = self._get_robot_proxy(robot_name)
-                proxy(action_name, real_action, 50.0)
+                response = proxy(action_name, real_action, 500.0)
+                action_success = bool(response.success)
+                if not action_success:
+                    rospy.logwarn(
+                        f"Action server reported failure for {robot_name}: "
+                        f"{action_name} {list(real_action)} -> {response.message}"
+                    )
             except Exception as e:
                 rospy.logwarn(f"Action server call failed for {robot_name}: {e}")
+                action_success = False
 
-        return robot_idx, action_name, action_index
+        return robot_idx, action_name, action_index, action_success
 
     # ------------------------------------------------------------------
     # Main loop
@@ -271,11 +329,17 @@ class ServiceCaller:
 
             for single_action_name, single_action_params in robot_actions:
                 rospy.loginfo(f"  {single_action_name} {single_action_params}")
-                robot_idx, _, action_index = self._dispatch_robot_action(
+                robot_idx, _, action_index, action_success = self._dispatch_robot_action(
                     single_action_name, single_action_params
                 )
 
                 if single_action_name == "NOOP":
+                    continue
+
+                if not action_success:
+                    rospy.logwarn(
+                        f"Skipping RDDL action update for failed action '{single_action_name}'."
+                    )
                     continue
 
                 if single_action_name == "unload":
