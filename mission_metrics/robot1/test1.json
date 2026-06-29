@@ -1,0 +1,872 @@
+{
+  "robot": "robot1",
+  "run_name": "test1",
+  "total_makespan_sec": 6276.506,
+  "fruits": [
+    {
+      "fruit": "orange1.1.L.T",
+      "grasp_time_sec": 124.259,
+      "success": false
+    },
+    {
+      "fruit": "orange1.1.L.T",
+      "grasp_time_sec": 218.855,
+      "success": false
+    },
+    {
+      "fruit": "orange1.1.L.T",
+      "grasp_time_sec": 145.164,
+      "success": true
+    },
+    {
+      "fruit": "orange1.1.L.B",
+      "grasp_time_sec": 174.571,
+      "success": false
+    },
+    {
+      "fruit": "orange1.1.L.B",
+      "grasp_time_sec": 118.277,
+      "success": false
+    },
+    {
+      "fruit": "orange1.1.L.B",
+      "grasp_time_sec": 122.698,
+      "success": true
+    },
+    {
+      "fruit": "orange1.2.L.B",
+      "grasp_time_sec": 228.515,
+      "success": true
+    },
+    {
+      "fruit": "orange1.3.L.T",
+      "grasp_time_sec": 163.804,
+      "success": true
+    },
+    {
+      "fruit": "orange1.3.L.B",
+      "grasp_time_sec": 174.573,
+      "success": true
+    },
+    {
+      "fruit": "orange1.4.L.B",
+      "grasp_time_sec": 169.654,
+      "success": false
+    },
+    {
+      "fruit": "orange1.4.L.T",
+      "grasp_time_sec": 123.502,
+      "success": true
+    },
+    {
+      "fruit": "orange1.4.L.B",
+      "grasp_time_sec": 246.114,
+      "success": true
+    },
+    {
+      "fruit": "orange1.5.L.T",
+      "grasp_time_sec": 162.38,
+      "success": true
+    },
+    {
+      "fruit": "orange1.5.L.B",
+      "grasp_time_sec": 159.061,
+      "success": false
+    },
+    {
+      "fruit": "orange1.5.L.B",
+      "grasp_time_sec": 121.224,
+      "success": false
+    },
+    {
+      "fruit": "orange1.5.L.B",
+      "grasp_time_sec": 119.955,
+      "success": true
+    },
+    {
+      "fruit": "orange1.6.L.T",
+      "grasp_time_sec": 164.688,
+      "success": true
+    },
+    {
+      "fruit": "orange1.6.L.B",
+      "grasp_time_sec": 170.598,
+      "success": true
+    },
+    {
+      "fruit": "orange1.7.L.T",
+      "grasp_time_sec": 159.404,
+      "success": true
+    },
+    {
+      "fruit": "orange1.8.L.B",
+      "grasp_time_sec": 172.011,
+      "success": true
+    },
+    {
+      "fruit": "orange1.8.L.T",
+      "grasp_time_sec": 162.164,
+      "success": false
+    },
+    {
+      "fruit": "orange1.8.L.T",
+      "grasp_time_sec": 112.065,
+      "success": false
+    },
+    {
+      "fruit": "orange1.8.L.T",
+      "grasp_time_sec": 109.199,
+      "success": false
+    },
+    {
+      "fruit": "orange1.8.L.T",
+      "grasp_time_sec": 172.615,
+      "success": false
+    },
+    {
+      "fruit": "orange1.8.L.T",
+      "grasp_time_sec": 122.34,
+      "success": true
+    },
+    {
+      "fruit": "orange1.8.R.B",
+      "grasp_time_sec": 160.846,
+      "success": false
+    },
+    {
+      "fruit": "orange1.8.R.B",
+      "grasp_time_sec": 114.347,
+      "success": true
+    },
+    {
+      "fruit": "orange2.8.L.B",
+      "grasp_time_sec": 183.281,
+      "success": true
+    },
+    {
+      "fruit": "orange1.8.R.T",
+      "grasp_time_sec": 168.607,
+      "success": false
+    },
+    {
+      "fruit": "orange1.8.R.T",
+      "grasp_time_sec": 119.768,
+      "success": true
+    },
+    {
+      "fruit": "orange2.7.L.B",
+      "grasp_time_sec": 165.283,
+      "success": true
+    },
+    {
+      "fruit": "orange1.7.R.T",
+      "grasp_time_sec": 157.248,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.075,
+      "success": false
+    },
+    {
+      "fruit": "orange1.7.R.T",
+      "grasp_time_sec": 122.385,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.057,
+      "success": false
+    },
+    {
+      "fruit": "orange1.7.R.T",
+      "grasp_time_sec": 105.073,
+      "success": true
+    },
+    {
+      "fruit": "orange1.7.R.B",
+      "grasp_time_sec": 160.819,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.078,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.063,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.063,
+      "success": false
+    },
+    {
+      "fruit": "orange1.7.R.B",
+      "grasp_time_sec": 118.067,
+      "success": true
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.049,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.047,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.073,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.05,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.087,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.056,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.05,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.069,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.052,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.039,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.048,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.063,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.054,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.06,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.059,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.066,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.062,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.063,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.047,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.053,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.067,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.058,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.059,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.039,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.05,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.095,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.061,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.056,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.052,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.051,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.045,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.057,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.04,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.055,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.063,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.052,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.04,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.045,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.046,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.054,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.055,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.066,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.053,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.042,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.059,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.055,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.048,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.061,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.066,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.065,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.075,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.076,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.058,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.037,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.056,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.059,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.064,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.067,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.047,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.049,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.076,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.071,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.063,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.057,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.04,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.053,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.061,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.054,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.036,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.057,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.059,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.068,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.064,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.049,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.065,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.066,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.046,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.069,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.078,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.076,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.07,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.063,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.045,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.054,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.043,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.05,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.067,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.044,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.064,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.07,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.05,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.072,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.052,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.044,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.046,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.058,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.046,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.052,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.07,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.055,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.074,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.06,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.043,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.053,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.062,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.048,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.068,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.044,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.053,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.049,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.065,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.052,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.062,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.048,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.047,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.047,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.051,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.049,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.06,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.041,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.076,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.059,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.044,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.058,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.057,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.042,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.043,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.061,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.063,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.084,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.074,
+      "success": false
+    },
+    {
+      "fruit": "orange2.7.L.T",
+      "grasp_time_sec": 0.055,
+      "success": false
+    }
+  ]
+}

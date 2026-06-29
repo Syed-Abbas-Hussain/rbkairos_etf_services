@@ -1,0 +1,32 @@
+{
+  "robot": "robot1",
+  "run_name": "test3",
+  "total_makespan_sec": 1444.15,
+  "fruits": [
+    {
+      "fruit": "orange1.3.L.T",
+      "grasp_time_sec": 113.14,
+      "success": true
+    },
+    {
+      "fruit": "orange1.5.R.T",
+      "grasp_time_sec": 349.708,
+      "success": false
+    },
+    {
+      "fruit": "orange1.5.R.T",
+      "grasp_time_sec": 120.903,
+      "success": false
+    },
+    {
+      "fruit": "orange1.5.R.T",
+      "grasp_time_sec": 129.695,
+      "success": true
+    },
+    {
+      "fruit": "orange3.3.L.B",
+      "grasp_time_sec": 199.889,
+      "success": true
+    }
+  ]
+}

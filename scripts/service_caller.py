@@ -2,6 +2,7 @@
 
 import json
 import os
+import time
 
 import numpy as np
 import rospkg
@@ -95,6 +96,23 @@ class ServiceCaller:
         # Per-robot action server proxies — created lazily on first use
         self._robot_action_proxies = {}
 
+        metrics_root = rospy.get_param("~metrics_root", "")
+        if not metrics_root:
+            metrics_root = os.path.join(
+                rospkg.RosPack().get_path("rbkairos_etf_services"),
+                "mission_metrics",
+            )
+        self.metrics_root = metrics_root
+        self._metrics_written = False
+        self._robot_metrics = {
+            robot_name: {
+                "start_time": None,
+                "end_time": None,
+                "fruits": [],
+            }
+            for robot_name in self.robot_names
+        }
+
     def _get_robot_proxy(self, robot_name: str):
         sim_robot_ns = {
             "robot1": "robot",
@@ -107,6 +125,97 @@ class ServiceCaller:
             rospy.wait_for_service(service_name)
             self._robot_action_proxies[robot_name] = rospy.ServiceProxy(service_name, ActionServer)
         return self._robot_action_proxies[robot_name]
+
+    def _mark_robot_action_start(self, robot_name, start_time):
+        metrics = self._robot_metrics[robot_name]
+        if metrics["start_time"] is None:
+            metrics["start_time"] = start_time
+
+    def _mark_robot_action_end(self, robot_name, end_time):
+        self._robot_metrics[robot_name]["end_time"] = end_time
+
+    def decode_orange_name(self, arr):
+        try:
+            row = int(round(float(arr[0])))
+            tree = int(round(float(arr[1])))
+            side_code = int(round(float(arr[2])))
+            height_code = int(round(float(arr[3])))
+        except (TypeError, ValueError, IndexError):
+            return None
+
+        if row < 1 or row > 4 or tree < 1 or tree > 8:
+            return None
+        if side_code not in (0, 1) or height_code not in (0, 1):
+            return None
+
+        side = "L" if side_code == 0 else "R"
+        height = "B" if height_code == 0 else "T"
+        return "orange{}.{}.{}.{}".format(row, tree, side, height)
+
+    def _record_grasp_metric(self, robot_name, real_action, duration, moveit_planning_time_sec, post_moveit_planning_grasp_time_sec, success):
+        orange_name = self.decode_orange_name(real_action)
+        if orange_name is None:
+            orange_name = "unknown"
+
+        duration = float(duration)
+        moveit_planning_time_sec = float(moveit_planning_time_sec)
+        post_moveit_planning_grasp_time_sec = float(post_moveit_planning_grasp_time_sec)
+        self._robot_metrics[robot_name]["fruits"].append({
+            "fruit": orange_name,
+            "grasp_time_sec": round(duration, 3),
+            "moveit_planning_time_sec": round(moveit_planning_time_sec, 3),
+            "post_moveit_planning_grasp_time_sec": round(post_moveit_planning_grasp_time_sec, 3),
+            "grasp_time_without_moveit_planning_sec": round(
+                max(0.0, duration - moveit_planning_time_sec),
+                3,
+            ),
+            "success": bool(success),
+        })
+
+    def _next_metrics_file(self, robot_name):
+        robot_dir = os.path.join(self.metrics_root, robot_name)
+        os.makedirs(robot_dir, exist_ok=True)
+
+        used_indexes = set()
+        for file_name in os.listdir(robot_dir):
+            stem, ext = os.path.splitext(file_name)
+            if ext == ".json" and stem.startswith("test") and stem[4:].isdigit():
+                used_indexes.add(int(stem[4:]))
+
+        run_index = 1
+        while run_index in used_indexes:
+            run_index += 1
+
+        run_name = "test{}".format(run_index)
+        return run_name, os.path.join(robot_dir, "{}.json".format(run_name))
+
+    def write_metrics_files(self):
+        if self._metrics_written:
+            return
+        self._metrics_written = True
+
+        for robot_name in self.robot_names:
+            metrics = self._robot_metrics[robot_name]
+            start_time = metrics["start_time"]
+            end_time = metrics["end_time"]
+            if start_time is None or end_time is None:
+                total_makespan = 0.0
+            else:
+                total_makespan = end_time - start_time
+
+            run_name, metrics_file = self._next_metrics_file(robot_name)
+            data = {
+                "robot": robot_name,
+                "run_name": run_name,
+                "total_makespan_sec": round(float(total_makespan), 3),
+                "fruits": metrics["fruits"],
+            }
+
+            with open(metrics_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+                f.write("\n")
+
+            rospy.loginfo("Wrote mission metrics for %s to %s", robot_name, metrics_file)
 
     # ------------------------------------------------------------------
     # Action parsing
@@ -250,12 +359,30 @@ class ServiceCaller:
         else:
             rospy.logwarn(f"Unknown planner action '{action_name}'.")
 
-        # Execute on the physical robot/sim and keep the returned success flag.
+        should_time_action = action_name not in ("wait", "NOOP")
+        action_start_time = None
+        moveit_planning_time_sec = 0.0
+        post_moveit_planning_grasp_time_sec = 0.0
+        proxy = None
+
         if action_name not in ("wait", "NOOP") and not self.dry_run:
             try:
                 proxy = self._get_robot_proxy(robot_name)
-                response = proxy(action_name, real_action, 500.0)
+            except Exception as e:
+                rospy.logwarn(f"Action server call failed for {robot_name}: {e}")
+                action_success = False
+
+        if should_time_action:
+            action_start_time = time.monotonic()
+            self._mark_robot_action_start(robot_name, action_start_time)
+
+        # Execute on the physical robot/sim and keep the returned success flag.
+        if proxy is not None:
+            try:
+                response = proxy(action_name, real_action, 1000.0)
                 action_success = bool(response.success)
+                moveit_planning_time_sec = float(getattr(response, "moveit_planning_time_sec", 0.0))
+                post_moveit_planning_grasp_time_sec = float(getattr(response, "post_moveit_planning_grasp_time_sec", 0.0))
                 if not action_success:
                     rospy.logwarn(
                         f"Action server reported failure for {robot_name}: "
@@ -264,6 +391,21 @@ class ServiceCaller:
             except Exception as e:
                 rospy.logwarn(f"Action server call failed for {robot_name}: {e}")
                 action_success = False
+
+        if should_time_action:
+            action_end_time = time.monotonic()
+            action_duration = action_end_time - action_start_time
+            self._mark_robot_action_end(robot_name, action_end_time)
+
+            if action_name == "grasp_fruit":
+                self._record_grasp_metric(
+                    robot_name,
+                    real_action,
+                    action_duration,
+                    moveit_planning_time_sec,
+                    post_moveit_planning_grasp_time_sec,
+                    action_success,
+                )
 
         return robot_idx, action_name, action_index, action_success
 
@@ -313,6 +455,7 @@ class ServiceCaller:
                     f"Planner returned terminal status '{action_name}' with params {list(action_data)}. "
                     "Stopping execution loop."
                 )
+                self.write_metrics_files()
                 break
 
             # Decode joint (multi-robot) or single-robot action
@@ -359,6 +502,7 @@ class ServiceCaller:
             if self.idle_count > 200 or next_obs["all_fruits_done"]:
                 reward = 0.0
                 rospy.loginfo("Sim finished")
+                self.write_metrics_files()
                 break
 
             self.obs = next_obs

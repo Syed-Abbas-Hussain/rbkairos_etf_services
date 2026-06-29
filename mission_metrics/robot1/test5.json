@@ -1,0 +1,14 @@
+{
+  "robot": "robot1",
+  "run_name": "test5",
+  "total_makespan_sec": 332.666,
+  "fruits": [
+    {
+      "fruit": "orange1.3.L.T",
+      "grasp_time_sec": 125.461,
+      "moveit_planning_time_sec": 40.111,
+      "grasp_time_without_moveit_planning_sec": 85.35,
+      "success": true
+    }
+  ]
+}
