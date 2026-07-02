@@ -213,8 +213,8 @@ non-fluents fruit_robot1_nf {
 
         // Robot parameters
         GRASP_SUCCESS_PROB = 0.58;
-        MAX_CAPACITY = 55.0;
-        CAPACITY_THRESHOLD = 53.0;
+        MAX_CAPACITY = 45.0;
+        CAPACITY_THRESHOLD = 40.0;
 
         // fruit properties
         fruit_weight(l1) = 1.2;
@@ -294,7 +294,7 @@ non-fluents fruit_robot1_nf {
         fruit_ripe(l10) = true;
         fruit_ripe(l11) = true;
         fruit_ripe(l12) = true;
-        fruit_ripe(l13) = false;  // unripe
+        fruit_ripe(l13) = false;  // unripe /
         fruit_ripe(l14) = true;
         fruit_ripe(l15) = true;
         fruit_ripe(l16) = true;
@@ -310,7 +310,7 @@ non-fluents fruit_robot1_nf {
         fruit_ripe(l26) = true;
         fruit_ripe(l27) = true;
         fruit_ripe(l28) = true;
-        fruit_ripe(l29) = false;  // unripe
+        fruit_ripe(l29) = false;  // unripe /
         fruit_ripe(l30) = true;
         fruit_ripe(l31) = true;
         fruit_ripe(l32) = true;
@@ -344,7 +344,7 @@ non-fluents fruit_robot1_nf {
         fruit_ripe(l60) = true;
         fruit_ripe(l61) = true;
         fruit_ripe(l62) = true;
-        fruit_ripe(l63) = false;  // unripe
+        fruit_ripe(l63) = false;  // unripe /
         fruit_ripe(l64) = true;
     };
 }

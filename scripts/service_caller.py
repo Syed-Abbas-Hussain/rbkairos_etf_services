@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import json
+import math
 import os
 import time
 
@@ -8,6 +9,7 @@ import numpy as np
 import rospkg
 import rospy
 
+from nav_msgs.msg import Odometry
 from prost_ros.msg import KeyValue
 from prost_ros.srv import StartPlanning, SubmitObservation
 from rbkairos_etf_services.srv import ActionServer
@@ -36,6 +38,10 @@ class ServiceCaller:
     TERMINAL_PLANNER_ACTIONS = {"ERROR"}
     RESTART_PLANNER_ACTIONS  = {"ROUND_END", "FAILED"}
     MAX_PLANNING_RESTARTS    = 5
+    SIM_ROBOT_NS = {
+        "robot1": "robot",
+        "robot2": "robot_b",
+    }
 
     def __init__(self, domain_file, instance_file, actions_file):
         bridge_ns = rospy.get_param("~prost_bridge_ns", "/prost_bridge")
@@ -109,15 +115,50 @@ class ServiceCaller:
                 "start_time": None,
                 "end_time": None,
                 "fruits": [],
+                "total_distance_m": 0.0,
+                "last_odom_xy": None,
+                "distance_tracking_active": False,
+                "unload_station_trips": 0,
             }
             for robot_name in self.robot_names
         }
+        self._odom_subscribers = {}
+        for robot_name in self.robot_names:
+            self._subscribe_robot_odom(robot_name)
+
+    def _sim_robot_ns(self, robot_name):
+        return self.SIM_ROBOT_NS.get(robot_name, robot_name)
+
+    def _subscribe_robot_odom(self, robot_name):
+        sim_robot_ns = self._sim_robot_ns(robot_name)
+        odom_topic = f"/{sim_robot_ns}/robotnik_base_control/odom_gt"
+        self._odom_subscribers[robot_name] = rospy.Subscriber(
+            odom_topic,
+            Odometry,
+            self._odom_callback,
+            callback_args=robot_name,
+            queue_size=10,
+        )
+
+    def _odom_callback(self, msg, robot_name):
+        metrics = self._robot_metrics.get(robot_name)
+        if metrics is None:
+            return
+
+        position = msg.pose.pose.position
+        xy = (float(position.x), float(position.y))
+        last_xy = metrics["last_odom_xy"]
+
+        if metrics["distance_tracking_active"] and last_xy is not None:
+            metrics["total_distance_m"] += math.hypot(
+                xy[0] - last_xy[0],
+                xy[1] - last_xy[1],
+            )
+
+        metrics["last_odom_xy"] = xy
 
     def _get_robot_proxy(self, robot_name: str):
-        sim_robot_ns = {
-            "robot1": "robot",
-            "robot2": "robot_b",
-        }.get(robot_name, robot_name)
+        sim_robot_ns = self._sim_robot_ns(robot_name)
  
         if robot_name not in self._robot_action_proxies:
             service_name = f"/{sim_robot_ns}/sim_action_server"
@@ -130,9 +171,12 @@ class ServiceCaller:
         metrics = self._robot_metrics[robot_name]
         if metrics["start_time"] is None:
             metrics["start_time"] = start_time
+        metrics["distance_tracking_active"] = True
 
     def _mark_robot_action_end(self, robot_name, end_time):
-        self._robot_metrics[robot_name]["end_time"] = end_time
+        metrics = self._robot_metrics[robot_name]
+        metrics["end_time"] = end_time
+        metrics["distance_tracking_active"] = False
 
     def decode_orange_name(self, arr):
         try:
@@ -152,23 +196,19 @@ class ServiceCaller:
         height = "B" if height_code == 0 else "T"
         return "orange{}.{}.{}.{}".format(row, tree, side, height)
 
-    def _record_grasp_metric(self, robot_name, real_action, duration, moveit_planning_time_sec, post_moveit_planning_grasp_time_sec, success):
+    def _record_grasp_metric(self, robot_name, real_action, duration, moveit_planning_time_sec, grasp_cycle_time, success):
         orange_name = self.decode_orange_name(real_action)
         if orange_name is None:
             orange_name = "unknown"
 
         duration = float(duration)
         moveit_planning_time_sec = float(moveit_planning_time_sec)
-        post_moveit_planning_grasp_time_sec = float(post_moveit_planning_grasp_time_sec)
+        grasp_cycle_time = float(grasp_cycle_time)
         self._robot_metrics[robot_name]["fruits"].append({
             "fruit": orange_name,
             "grasp_time_sec": round(duration, 3),
             "moveit_planning_time_sec": round(moveit_planning_time_sec, 3),
-            "post_moveit_planning_grasp_time_sec": round(post_moveit_planning_grasp_time_sec, 3),
-            "grasp_time_without_moveit_planning_sec": round(
-                max(0.0, duration - moveit_planning_time_sec),
-                3,
-            ),
+            "grasp_cycle_time": round(grasp_cycle_time, 3),
             "success": bool(success),
         })
 
@@ -208,6 +248,8 @@ class ServiceCaller:
                 "robot": robot_name,
                 "run_name": run_name,
                 "total_makespan_sec": round(float(total_makespan), 3),
+                "total_distance_traveled_m": round(float(metrics["total_distance_m"]), 3),
+                "unload_station_trips": int(metrics["unload_station_trips"]),
                 "fruits": metrics["fruits"],
             }
 
@@ -294,6 +336,10 @@ class ServiceCaller:
         # action_index remains the robot-local RDDL index for evaluator updates.
         target_name = action_params[1] if len(action_params) >= 2 else None
         data_index = self.get_action_data_index(action_name, target_name)
+        current_pos_indices = np.where(self.obs["robot_at"][robot_idx])[0]
+        starting_pos_name = None
+        if current_pos_indices.size > 0:
+            starting_pos_name = self.positions[int(current_pos_indices[0])]
 
         real_action = np.zeros(6, dtype=float)
         action_index = -1
@@ -362,14 +408,14 @@ class ServiceCaller:
         should_time_action = action_name not in ("wait", "NOOP")
         action_start_time = None
         moveit_planning_time_sec = 0.0
-        post_moveit_planning_grasp_time_sec = 0.0
+        grasp_cycle_time = 0.0
         proxy = None
 
         if action_name not in ("wait", "NOOP") and not self.dry_run:
             try:
                 proxy = self._get_robot_proxy(robot_name)
             except Exception as e:
-                rospy.logwarn(f"Action server call failed for {robot_name}: {e}")
+                rospy.logwarn(f"\033[91mAction server call failed for {robot_name}: {e}\033[0m")
                 action_success = False
 
         if should_time_action:
@@ -379,17 +425,32 @@ class ServiceCaller:
         # Execute on the physical robot/sim and keep the returned success flag.
         if proxy is not None:
             try:
+                rospy.loginfo(
+                    "\033[96mWaiting for sim action result: %s %s on %s\033[0m \n \n",
+                    action_name,
+                    list(real_action),
+                    robot_name,
+                )
                 response = proxy(action_name, real_action, 1000.0)
                 action_success = bool(response.success)
+                if action_success:
+                    rospy.loginfo(
+                        "\033[92mSim action succeeded: %s on %s -> %s\033[0m  \n \n",
+                        action_name,
+                        robot_name,
+                        response.message,
+                    )
+                    rospy.sleep(2.5)
                 moveit_planning_time_sec = float(getattr(response, "moveit_planning_time_sec", 0.0))
-                post_moveit_planning_grasp_time_sec = float(getattr(response, "post_moveit_planning_grasp_time_sec", 0.0))
+                grasp_cycle_time = float(getattr(response, "post_moveit_planning_grasp_time_sec", 0.0))
                 if not action_success:
                     rospy.logwarn(
-                        f"Action server reported failure for {robot_name}: "
-                        f"{action_name} {list(real_action)} -> {response.message}"
+                        f"\033[91mAction server reported failure for {robot_name}: "
+                        f"{action_name} {list(real_action)} -> {response.message}\033[0m  \n \n"
                     )
+                    rospy.sleep(2.5)
             except Exception as e:
-                rospy.logwarn(f"Action server call failed for {robot_name}: {e}")
+                rospy.logwarn(f"\033[91mAction server call failed for {robot_name}: {e}\033[0m")
                 action_success = False
 
         if should_time_action:
@@ -397,13 +458,21 @@ class ServiceCaller:
             action_duration = action_end_time - action_start_time
             self._mark_robot_action_end(robot_name, action_end_time)
 
+            if (
+                action_success
+                and action_name == "navigate"
+                and target_name in ("unload1", "unload2")
+                and starting_pos_name != target_name
+            ):
+                self._robot_metrics[robot_name]["unload_station_trips"] += 1
+
             if action_name == "grasp_fruit":
                 self._record_grasp_metric(
                     robot_name,
                     real_action,
                     action_duration,
                     moveit_planning_time_sec,
-                    post_moveit_planning_grasp_time_sec,
+                    grasp_cycle_time,
                     action_success,
                 )
 
@@ -421,7 +490,7 @@ class ServiceCaller:
                 if true_count != 1:
                     rospy.logerr(f"{robot_name} robot_at has {true_count} true values — expected 1.")
 
-            rospy.loginfo("Sending observations and reward to planner...")
+            rospy.logdebug("Sending observations and reward to planner.")
 
             obs_to_submit = []
             self.append_scalar_fluent(obs_to_submit, "all_fruits_done", self.obs["all_fruits_done"])
@@ -448,7 +517,7 @@ class ServiceCaller:
             action_name = response.action_name
             action_data = response.action_params
 
-            rospy.loginfo(f"Planner response: action_name={action_name}, params={list(action_data)}")
+            # rospy.loginfo(f"\033[96mPlanner response: action_name={action_name}, params={list(action_data)}\033[0m")
 
             if action_name in self.TERMINAL_PLANNER_ACTIONS:
                 rospy.logerr(
@@ -466,12 +535,12 @@ class ServiceCaller:
             else:
                 robot_actions = [(action_name, list(action_data))]
 
-            rospy.loginfo(f"Dispatching {len(robot_actions)} robot action(s)...")
+            rospy.logdebug(f"Dispatching {len(robot_actions)} robot action(s).")
 
             observed_action = self.evaluator.create_action_template()
 
             for single_action_name, single_action_params in robot_actions:
-                rospy.loginfo(f"  {single_action_name} {single_action_params}")
+                rospy.logdebug(f"Dispatching {single_action_name} {single_action_params}")
                 robot_idx, _, action_index, action_success = self._dispatch_robot_action(
                     single_action_name, single_action_params
                 )
@@ -480,9 +549,9 @@ class ServiceCaller:
                     continue
 
                 if not action_success:
-                    rospy.logwarn(
-                        f"Skipping RDDL action update for failed action '{single_action_name}'."
-                    )
+                    # rospy.logwarn(
+                    #     f"Skipping RDDL action update for failed action '{single_action_name}'."
+                    # )
                     continue
 
                 if single_action_name == "unload":

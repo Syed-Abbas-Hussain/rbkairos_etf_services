@@ -174,7 +174,13 @@ domain fruit_collection_multi_aisle {
         forall_{?r : robot} [
             (sum_{?a : aisle_position} navigate(?r, ?a)) +
             (sum_{?l : location} [grasp_fruit(?r, ?l) + load_to_bin(?r, ?l)]) +
-            unload(?r) + wait(?r) == 1
+            unload(?r) + wait(?r) <= 1
+        ];
+
+        forall_{?r : robot} [
+            (sum_{?a : aisle_position} navigate(?r, ?a)) +
+            (sum_{?l : location} [grasp_fruit(?r, ?l) + load_to_bin(?r, ?l)]) +
+            unload(?r) + wait(?r) >= 1
         ];
 
         // Can only navigate to an adjacent position.
