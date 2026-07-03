@@ -10,6 +10,7 @@ import rospkg
 import rospy
 
 from nav_msgs.msg import Odometry
+from std_msgs.msg import String
 from prost_ros.msg import KeyValue
 from prost_ros.srv import StartPlanning, SubmitObservation
 from rbkairos_etf_services.srv import ActionServer
@@ -126,6 +127,18 @@ class ServiceCaller:
         for robot_name in self.robot_names:
             self._subscribe_robot_odom(robot_name)
 
+        self._completed_waypoint_pubs = {}
+        for robot_name in self.robot_names:
+            sim_robot_ns = self._sim_robot_ns(robot_name)
+            topic_name = f"/{sim_robot_ns}/path_nav/completed_waypoints"
+            self._completed_waypoint_pubs[robot_name] = rospy.Publisher(
+                topic_name,
+                String,
+                queue_size=1,
+                latch=True,
+            )
+        self.publish_completed_waypoints(self.obs)
+
     def _sim_robot_ns(self, robot_name):
         return self.SIM_ROBOT_NS.get(robot_name, robot_name)
 
@@ -177,6 +190,31 @@ class ServiceCaller:
         metrics = self._robot_metrics[robot_name]
         metrics["end_time"] = end_time
         metrics["distance_tracking_active"] = False
+
+    def completed_waypoints_for_robot(self, obs, robot_name):
+        completed_waypoints = []
+        fruit_at = np.asarray(obs["fruit_at"], dtype=bool)
+
+        for pos_idx, position_name in enumerate(self.positions):
+            if self.evaluator.unload_station[pos_idx]:
+                continue
+
+            reachable_ripe = self.evaluator.reachable_from[:, pos_idx] & self.evaluator.fruit_ripe
+            if not np.any(reachable_ripe):
+                continue
+
+            if np.all(~fruit_at[reachable_ripe]):
+                completed_waypoints.append(position_name)
+
+        return completed_waypoints
+
+    def publish_completed_waypoints(self, obs):
+        for robot_name, publisher in self._completed_waypoint_pubs.items():
+            data = {
+                "robot": robot_name,
+                "completed_waypoints": self.completed_waypoints_for_robot(obs, robot_name),
+            }
+            publisher.publish(String(data=json.dumps(data)))
 
     def decode_orange_name(self, arr):
         try:
@@ -425,30 +463,30 @@ class ServiceCaller:
         # Execute on the physical robot/sim and keep the returned success flag.
         if proxy is not None:
             try:
-                rospy.loginfo(
-                    "\033[96mWaiting for sim action result: %s %s on %s\033[0m \n \n",
-                    action_name,
-                    list(real_action),
-                    robot_name,
-                )
+                # rospy.loginfo(
+                #     "\033[93mWaiting for sim action result: %s %s on %s\033[0m",
+                #     action_name,
+                #     list(real_action),
+                #     robot_name,
+                # )
                 response = proxy(action_name, real_action, 1000.0)
                 action_success = bool(response.success)
                 if action_success:
                     rospy.loginfo(
-                        "\033[92mSim action succeeded: %s on %s -> %s\033[0m  \n \n",
+                        "\033[92mSim action succeeded: %s on %s -> %s\033[0m",
                         action_name,
                         robot_name,
                         response.message,
                     )
-                    rospy.sleep(2.5)
+                    # rospy.sleep(2.5)
                 moveit_planning_time_sec = float(getattr(response, "moveit_planning_time_sec", 0.0))
                 grasp_cycle_time = float(getattr(response, "post_moveit_planning_grasp_time_sec", 0.0))
                 if not action_success:
                     rospy.logwarn(
                         f"\033[91mAction server reported failure for {robot_name}: "
-                        f"{action_name} {list(real_action)} -> {response.message}\033[0m  \n \n"
+                        f"{action_name} {list(real_action)} -> {response.message}\033[0m"
                     )
-                    rospy.sleep(2.5)
+                    # rospy.sleep(2.5)
             except Exception as e:
                 rospy.logwarn(f"\033[91mAction server call failed for {robot_name}: {e}\033[0m")
                 action_success = False
@@ -567,6 +605,7 @@ class ServiceCaller:
 
             next_obs = self.evaluator.step(self.obs, observed_action)
             reward = self.evaluator.evaluate_reward(self.obs, observed_action, next_obs)
+            self.publish_completed_waypoints(next_obs)
 
             if self.idle_count > 200 or next_obs["all_fruits_done"]:
                 reward = 0.0
