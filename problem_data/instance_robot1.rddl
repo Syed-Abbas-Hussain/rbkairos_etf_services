@@ -212,7 +212,7 @@ non-fluents fruit_robot1_nf {
         distance(unload2, a20) = 22.0967;
 
         // Robot parameters
-        GRASP_SUCCESS_PROB = 0.66;
+        GRASP_SUCCESS_PROB = 0.91;
         MAX_CAPACITY = 45.0;
         CAPACITY_THRESHOLD = 40.0;
 

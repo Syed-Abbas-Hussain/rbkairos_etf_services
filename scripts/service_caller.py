@@ -464,7 +464,7 @@ class ServiceCaller:
         if proxy is not None:
             try:
                 # rospy.loginfo(
-                #     "\033[93mWaiting for sim action result: %s %s on %s\033[0m",
+                #     "\033[93mWaiting for sim action result: %s %s on %s\033[0m \n \n",
                 #     action_name,
                 #     list(real_action),
                 #     robot_name,
